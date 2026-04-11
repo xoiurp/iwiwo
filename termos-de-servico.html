@@ -1,0 +1,619 @@
+<!DOCTYPE html><!--  Last Published: Sat Sep 27 2025 21:28:45 GMT+0000 (Coordinated Universal Time)  -->
+<html data-wf-page="66e825372201297ffe1bfa26" data-wf-site="66db592adddbd3479d3ff7aa" lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Termos de Serviço</title>
+  <meta content="Termos de Serviço" property="og:title">
+  <meta content="Termos de Serviço" property="twitter:title">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <link href="css/normalize.css" rel="stylesheet" type="text/css">
+  <link href="css/webflow.css" rel="stylesheet" type="text/css">
+  <link href="css/iwo-watch.webflow.css" rel="stylesheet" type="text/css">
+  <script type="text/javascript">!function(o,c){var n=c.documentElement,t=" w-mod-";n.className+=t+"js",("ontouchstart"in o||o.DocumentTouch&&c instanceof DocumentTouch)&&(n.className+=t+"touch")}(window,document);</script>
+  <link href="images/favicon.svg" rel="shortcut icon" type="image/x-icon">
+  <link href="images/webclip.svg" rel="apple-touch-icon">
+  <link href="https://cdn.smootify.io/assets/latest/css/index.css" rel="stylesheet">
+  <script>window.SmootifyUserOptions = {
+  productsBase: "products",
+  collectionsBase: "collections",
+  vendorsBase: "vendor",  
+  newCustomerAccountsPublicKey: "shp_9c4a0b64-c0a1-45c0-aff4-0616e1899fc7",
+  newCustomerLoginRedirect: window.location.origin + "/account/my-account",
+  orderPageUrl: "/account/order",
+  enableAutoTrack: true
+}
+</script>
+  <script type="module" src="https://cdn.smootify.io/assets/latest/js/index.js" async="" defer=""></script>
+  <script src="https://cdn.smootify.io/assets/utils/analytics.js" type="fs-cc" fs-cc-categories="analytics"></script>
+  <script src="https://embed.wized.com/Zyc9mevUaSUhCaZawPtR.js"></script>
+  <script data-wized-id="Zyc9mevUaSUhCaZawPtR" src="https://embed.wized.com"></script>
+  <script>
+// Shopify configuration
+const shopifyDomain = '1bdd45-30.myshopify.com';
+const storefrontAccessToken = 'b822779326ff05c1082e8a729db56fa0';
+// Function to get cart ID from IndexedDB
+async function getCartId() {
+  return new Promise((resolve, reject) => {
+    const dbName = 'smootify';
+    const storeName = 'storefront';
+    const request = indexedDB.open(dbName);
+    request.onsuccess = function(event) {
+      const db = event.target.result;
+      const transaction = db.transaction([storeName], 'readonly');
+      const store = transaction.objectStore(storeName);
+      const getRequest = store.get('_cart_id');
+      getRequest.onsuccess = function(event) {
+        resolve(event.target.result);
+      };
+      getRequest.onerror = function(event) {
+        reject('Error getting cart ID from IndexedDB');
+      };
+    };
+    request.onerror = function(event) {
+      reject('Error opening IndexedDB');
+    };
+  });
+}
+// Helper functions
+function getNumericId(gid) {
+  if (!gid) return null;
+  try {
+    const parts = gid.split('/');
+    return parseInt(parts[parts.length - 1]);
+  } catch (e) {
+    console.error("Error parsing numeric ID from GID:", gid, e);
+    return null;
+  }
+}
+function convertPriceToCents(price) {
+  if (price === null || price === undefined || isNaN(parseFloat(price))) return null;
+  return Math.round(parseFloat(price) * 100);
+}
+// Function to fetch cart data from Shopify
+async function fetchCartData(cartId) {
+  const graphqlQuery = `
+    query GetCartDetails($cartId: ID!) {
+      cart(id: $cartId) {
+        id
+        note
+        attributes { key value }
+        cost {
+          totalAmount { amount currencyCode }
+          subtotalAmount { amount currencyCode }
+        }
+        totalQuantity
+        discountCodes { code applicable }
+        discountAllocations {
+          discountedAmount { amount currencyCode }
+        }
+        lines(first: 50) {
+          edges {
+            node {
+              id
+              quantity
+              attributes { key value }
+              cost {
+                amountPerQuantity { amount currencyCode }
+                compareAtAmountPerQuantity { amount currencyCode }
+                totalAmount { amount currencyCode }
+              }
+              discountAllocations {
+                discountedAmount { amount currencyCode }
+              }
+              merchandise {
+                ... on ProductVariant {
+                  id
+                  sku
+                  title
+                  requiresShipping
+                  taxable
+                  weight
+                  weightUnit
+                  image {
+                    url
+                    altText
+                    width
+                    height
+                  }
+                  selectedOptions { name value }
+                  quantityRule {
+                    minimum
+                    maximum
+                    increment
+                  }
+                  product {
+                    id
+                    title
+                    vendor
+                    handle
+                    productType
+                    descriptionHtml
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const response = await fetch(`https://${shopifyDomain}/api/2025-04/graphql.json`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': storefrontAccessToken
+    },
+    body: JSON.stringify({
+      query: graphqlQuery,
+      variables: { cartId }
+    })
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`GraphQL request failed: ${response.status} ${response.statusText}`, errorBody);
+    throw new Error(`Failed to fetch cart data: ${response.statusText}`);
+  }
+  const jsonResponse = await response.json();
+  if (jsonResponse.errors) {
+    console.error("GraphQL Errors:", JSON.stringify(jsonResponse.errors, null, 2));
+    throw new Error("Error fetching cart data from Shopify GraphQL.");
+  }
+  return jsonResponse;
+}
+// Function to prepare cart payload according to Yampi example
+function prepareCartPayload(cartData) {
+  const cart = cartData?.data?.cart;
+  if (!cart) {
+    console.error("Cart data is missing or invalid in GraphQL response:", cartData);
+    throw new Error("Invalid cart data received from Shopify.");
+  }
+  const cartToken = cart.id ? cart.id.split('?key=')[1] : null;
+  if (!cartToken) {
+    console.error("Could not extract cart token from cart ID:", cart.id);
+    throw new Error("Cart token is missing.");
+  }
+  const cartAttributes = {};
+  cart.attributes?.forEach(attr => {
+    cartAttributes[attr.key] = attr.value;
+  });
+  const cartLevelTotalDiscount = cart.discountAllocations?.reduce((sum, alloc) => {
+    return sum + parseFloat(alloc.discountedAmount?.amount || 0);
+  }, 0) || 0;
+  const items = cart.lines?.edges?.map(edge => {
+    const node = edge.node;
+    const merchandise = node.merchandise;
+    const product = merchandise?.product;
+    if (!merchandise) return null;
+    const variantId = getNumericId(merchandise.id);
+    const productId = getNumericId(product?.id);
+    const lineKey = node.id ? node.id.split('?cart=')[0].split('/').pop() : null;
+    const properties = {};
+    node.attributes?.forEach(attr => {
+      properties[attr.key] = attr.value;
+    });
+    const lineLevelTotalDiscount = node.discountAllocations?.reduce((sum, alloc) => {
+      return sum + parseFloat(alloc.discountedAmount?.amount || 0);
+    }, 0) || 0;
+    let grams = 0;
+    if (merchandise.weight && merchandise.weightUnit) {
+      if (merchandise.weightUnit === 'KILOGRAMS' || merchandise.weightUnit === 'KG') {
+        grams = merchandise.weight * 1000;
+      } else if (merchandise.weightUnit === 'GRAMS' || merchandise.weightUnit === 'G') {
+        grams = merchandise.weight;
+      } else if (merchandise.weightUnit === 'POUNDS' || merchandise.weightUnit === 'LB') {
+        grams = merchandise.weight * 453.592;
+      } else if (merchandise.weightUnit === 'OUNCES' || merchandise.weightUnit === 'OZ') {
+        grams = merchandise.weight * 28.3495;
+      }
+      grams = Math.round(grams);
+    }
+    return {
+      id: variantId,
+      properties,
+      quantity: node.quantity,
+      variant_id: variantId,
+      key: lineKey,
+      title: merchandise.title || product?.title || "N/A",
+      price: convertPriceToCents(node.cost?.amountPerQuantity?.amount),
+      original_price: convertPriceToCents(node.cost?.compareAtAmountPerQuantity?.amount),
+      presentment_price: convertPriceToCents(node.cost?.amountPerQuantity?.amount),
+      discounted_price: convertPriceToCents(node.cost?.amountPerQuantity?.amount),
+      line_price: convertPriceToCents(node.cost?.totalAmount?.amount),
+      original_line_price: convertPriceToCents(node.cost?.compareAtAmountPerQuantity?.amount * node.quantity),
+      total_discount: convertPriceToCents(lineLevelTotalDiscount),
+      discounts: [],
+      sku: merchandise.sku || "",
+      grams,
+      vendor: product?.vendor || "",
+      taxable: merchandise.taxable === true,
+      product_id: productId,
+      product_has_only_default_variant: true,
+      gift_card: product?.productType?.toLowerCase().includes('gift') || false,
+      final_price: convertPriceToCents(node.cost?.amountPerQuantity?.amount),
+      final_line_price: convertPriceToCents(node.cost?.totalAmount?.amount),
+      url: product?.handle ? `/products/${product.handle}?variant=${variantId}` : "",
+      featured_image: merchandise.image ? {
+        aspect_ratio: merchandise.image.width && merchandise.image.height ? merchandise.image.width / merchandise.image.height : null,
+        alt: merchandise.image.altText || product?.title || "",
+        height: merchandise.image.height || null,
+        url: merchandise.image.url || "",
+        width: merchandise.image.width || null
+      } : null,
+      image: merchandise.image?.url || "",
+      handle: product?.handle || "",
+      requires_shipping: merchandise.requiresShipping === true,
+      product_type: product?.productType || "",
+      product_title: product?.title || "",
+      product_description: product?.descriptionHtml || "",
+      variant_title: merchandise.title || null,
+      variant_options: merchandise.selectedOptions?.map(opt => opt.value) || [],
+      options_with_values: merchandise.selectedOptions?.map(opt => ({ name: opt.name, value: opt.value })) || [],
+      line_level_discount_allocations: [],
+      line_level_total_discount: convertPriceToCents(lineLevelTotalDiscount),
+      quantity_rule: merchandise.quantityRule ? {
+        min: merchandise.quantityRule.minimum,
+        max: merchandise.quantityRule.maximum,
+        increment: merchandise.quantityRule.increment
+      } : null,
+      has_components: false
+    };
+  }).filter(item => item !== null);
+  const requiresShipping = items.some(item => item.requires_shipping);
+  const finalPayload = {
+    shop: "shop.iwowatch.com.br", // Using custom domain as per user feedback and original script
+    cart_payload: {
+      token: cartToken,
+      note: cart.note || "",
+      attributes: cartAttributes,
+      original_total_price: items.reduce((sum, item) => sum + (item.original_line_price || 0), 0),
+      total_price: convertPriceToCents(cart.cost?.totalAmount?.amount),
+      total_discount: convertPriceToCents(cartLevelTotalDiscount),
+      total_weight: items.reduce((sum, item) => sum + (item.grams || 0) * item.quantity, 0),
+      item_count: cart.totalQuantity,
+      items,
+      requires_shipping: requiresShipping,
+      currency: cart.cost?.totalAmount?.currencyCode || "BRL",
+      items_subtotal_price: convertPriceToCents(cart.cost?.subtotalAmount?.amount),
+      cart_level_discount_applications: []
+    }
+  };
+  return finalPayload;
+}
+// Function to send final request and get checkout URL
+async function getCheckoutUrl(payload) {
+  console.log('Payload enviado para Yampi:', JSON.stringify(payload, null, 2));
+  const response = await fetch('https://api.dooki.com.br/v2/public/shopify/cart', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  return await response.json();
+}
+// Main function to handle the checkout process
+async function handleCheckout(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  try {
+    const cartId = await getCartId();
+    const cartData = await fetchCartData(cartId);
+    const payload = prepareCartPayload(cartData);
+    const checkoutData = await getCheckoutUrl(payload);
+    // Log the response from Dooki API for debugging
+    console.log('Resposta da API Dooki (Yampi):', JSON.stringify(checkoutData, null, 2));
+    // Check if the redirect URL exists before attempting redirection
+    if (checkoutData && checkoutData.checkout_direct_url) {
+      window.location.href = checkoutData.checkout_direct_url;
+    } else {
+      console.error('Erro: checkout_direct_url não encontrado na resposta da API Dooki.');
+      alert('Ocorreu um erro ao obter o link de checkout. Por favor, tente novamente ou contate o suporte.');
+    }
+  } catch (error) {
+    console.error('Error during checkout process:', error);
+    alert('Ocorreu um erro ao processar o checkout. Por favor, tente novamente.');
+  }
+}
+// Function to intercept the Shopify checkout button
+function interceptCheckoutButton() {
+  const checkoutSelectors = [
+    'button[name="checkout"]',
+    'input[name="checkout"]',
+    '[href="/checkout"]',
+    'form[action="/cart"] input[type="submit"]',
+    'form[action="/cart"] button[type="submit"]',
+    '.w-button[value="Finalizar Compra"]',
+    'input[value="Finalizar Compra"]',
+    'button.button-6',
+    '[data-value="Finalizar Compra"]'
+  ];
+  const checkoutButtons = document.querySelectorAll(checkoutSelectors.join(', '));
+  checkoutButtons.forEach(button => {
+    button.addEventListener('click', handleCheckout);
+    console.log('Intercepted button:', button);
+  });
+  if (checkoutButtons.length === 0) {
+    console.log('No checkout buttons found. Selectors used:', checkoutSelectors);
+  }
+}
+document.addEventListener('DOMContentLoaded', interceptCheckoutButton);
+setTimeout(interceptCheckoutButton, 1000);
+</script>
+  <!--  Google tag (gtag.js)  -->
+  <script async="" src="https://www.googletagmanager.com/gtag/js?id=AW-16552896558"></script>
+  <script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'AW-16552896558'); </script>
+  <!--  Event snippet for Carrinho conversion page  -->
+  <script>
+  gtag('event', 'conversion', {'send_to': 'AW-16552896558/OvErCPPSkb8ZEK7QhNU9'});
+</script>
+</head>
+<body>
+  <div data-animation="default" data-collapse="medium" data-duration="400" data-easing="ease" data-easing2="ease" role="banner" class="aviso-wrapper w-nav"><img data-w-id="7a05aa14-8be0-26cb-0942-fc97960cf124" loading="lazy" alt="" src="images/close.svg" class="image">
+    <div class="div-aviso"><img width="8" height="8" alt="" src="images/snowflake.svg" loading="lazy" class="icon-header">
+      <div class="div-block">
+        <div class="text-block">O Natal está chegando! Ganhe 10% OFF usando o cupom IWO10 em sua primeira compra!</div>
+        <a href="loja.html" class="link-block-24 w-inline-block">
+          <div class="text-block-azul-sublime"><strong class="text-header-aviso-azul">Shop Now</strong></div>
+        </a><img width="16" height="16" alt="" src="images/right-arrow.svg" loading="lazy" class="image-2">
+      </div>
+    </div>
+  </div>
+  <div data-animation="default" class="navbar21_component w-nav" data-easing2="ease" fs-scrolldisable-element="smart-nav" data-easing="ease" data-collapse="all" data-w-id="5e62d822-6904-3f2e-bfd0-9bac3a76c0d1" role="banner" data-duration="0">
+    <div class="navbar21_container">
+      <a href="index.html" class="navbar21_logo-link w-nav-brand"><img src="images/iwo_cinza_extended-1.webp" loading="lazy" sizes="(max-width: 479px) 98vw, (max-width: 767px) 99vw, (max-width: 1224px) 100vw, 1224px" srcset="images/iwo_cinza_extended-1-p-500.webp 500w, images/iwo_cinza_extended-1-p-800.webp 800w, images/iwo_cinza_extended-1.webp 1224w" alt="" class="navbar21_logo"></a>
+      <div class="menu-wrapper-copy">
+        <a href="index.html" class="navlink-notselected w-nav-link">Home</a>
+        <a href="loja.html" class="navlink-notselected w-nav-link">Loja</a>
+        <a wized="col-smartwatch" href="https://www.iwowatch.com.br/collections/smartwatch" class="navlink-notselected w-nav-link">Smartwatch</a>
+        <a wized="col-audio" href="https://www.iwowatch.com.br/collections/audio" class="navlink-notselected w-nav-link">Áudio</a>
+        <link rel="prerender" href="https://www.iwowatch.com.br/collections/audio">
+        <a wized="col-pulseiras" href="https://www.iwowatch.com.br/collections/pulseiras" class="navlink-notselected w-nav-link">Pulseiras</a>
+        <link rel="prerender" href="https://www.iwowatch.com.br/collections/pulseiras">
+      </div>
+      <div class="navbar21_wrapper">
+        <nav role="navigation" data-w-id="5e62d822-6904-3f2e-bfd0-9bac3a76c0e1" class="navbar21_menu w-nav-menu">
+          <div class="navbar21_menu-wrapper">
+            <div class="navbar21_menu-left">
+              <div class="navbar21_menu-links-wrapper">
+                <a href="product/iwo-ultra-3-amoled.html" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/svgexport-19.svg" loading="lazy" alt="" class="icone-prod">
+                    <h1 class="heading-22-copy">Iwo Ultra 3 AMOLED</h1>
+                  </div>
+                </a>
+                <a href="product/iwo-15x.html" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/svgexport-20.svg" loading="lazy" alt="" class="icone-prod">
+                    <h1 class="heading-22">Iwo 15X Pro</h1>
+                  </div>
+                </a>
+                <a href="product/iwo-14-mini.html" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/svgexport-22.svg" loading="lazy" alt="" class="icone-prod">
+                    <h1 class="heading-22">Iwo 14 Mini</h1>
+                  </div>
+                </a>
+                <a href="product/iwo-14-pro-max.html" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/svgexport-20.svg" loading="lazy" alt="" class="icone-prod">
+                    <h1 class="heading-22">Iwo 14 Pro Max</h1>
+                  </div>
+                </a>
+                <a href="product/iwo-15-x-mini.html" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/svgexport-21.svg" loading="lazy" alt="" class="icone-prod">
+                    <h1 class="heading-22">Iwo 15X Mini</h1>
+                  </div>
+                </a>
+                <a href="https://www.iwowatch.com.br/products/iwo-air-pods-pro" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/svgexport-23.svg" loading="lazy" alt="" class="image-40">
+                    <h1 class="heading-22">Air Pods Pro</h1>
+                  </div>
+                </a>
+                <a href="https://www.iwowatch.com.br/products/air-pods-max" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/svgexport-24.svg" loading="lazy" alt="" class="icone-prod">
+                    <h1 class="heading-22">Air Pods Max</h1>
+                  </div>
+                </a>
+                <a href="https://www.iwowatch.com.br/collections/pulseiras" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/watch_nav_bands_large_.svg" loading="lazy" alt="">
+                    <h1 class="heading-22">Pulseiras</h1>
+                  </div>
+                </a>
+                <a href="loja.html" class="link-block-9 w-inline-block">
+                  <div class="div-block-60"><img src="images/shopping-bag.svg" loading="lazy" alt="" class="icone-prod">
+                    <h1 class="heading-22">Todos os Produtos</h1>
+                  </div>
+                </a>
+              </div>
+              <div class="navbar21_menu-links-wrapper-copy">
+                <a href="account/login.html" class="link-block-9 w-inline-block">
+                  <div class="div-supop"><img src="images/account.svg" loading="lazy" alt="" class="image-38">
+                    <h1 class="heading-22">Minha Conta</h1>
+                  </div>
+                </a>
+                <a href="https://www.iwowatch.com.br/account/login" class="link-block-9 w-inline-block">
+                  <div class="div-supop"><img src="images/Air-Pods-Max.svg" loading="lazy" alt="" class="image-39">
+                    <h1 class="heading-22">Suporte ao Cliente</h1>
+                  </div>
+                </a>
+              </div>
+            </div>
+            <div class="navbar21_menu-right">
+              <div class="div-block-63">
+                <h1 class="heading-24">Artigos do Blog em Destaque</h1>
+              </div>
+              <div class="w-dyn-list">
+                <div role="list" class="w-dyn-items">
+                  <div role="listitem" class="collection-item-4 w-dyn-item">
+                    <a href="#" class="link-block-23 w-inline-block">
+                      <div class="div-block-61"><img src="https://d3e54v103j8qbb.cloudfront.net/plugins/Basic/assets/placeholder.60f9b1840c.svg" loading="lazy" alt="" class="image-41 w-dyn-bind-empty">
+                        <div class="div-block-62">
+                          <h1 class="heading-23 w-dyn-bind-empty"></h1>
+                          <h1 class="heading-23-copy w-dyn-bind-empty"></h1>
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+                <div class="w-dyn-empty">
+                  <div>No items found.</div>
+                </div>
+              </div>
+              <div class="div-block-63">
+                <a href="blog/principal.html" class="button-20 w-button">Ver Blog</a>
+              </div>
+            </div>
+            <div class="navbar21_bottom">
+              <a href="contato.html" class="text-size-large">Contato</a>
+              <div class="w-layout-grid navbar21_social-list">
+                <a href="https://www.instagram.com/iwodobrasil/" target="_blank" class="navbar21_social-link w-inline-block">
+                  <div class="social-icon w-embed"><svg width="100%" height="100%" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M16 3H8C5.23858 3 3 5.23858 3 8V16C3 18.7614 5.23858 21 8 21H16C18.7614 21 21 18.7614 21 16V8C21 5.23858 18.7614 3 16 3ZM19.25 16C19.2445 17.7926 17.7926 19.2445 16 19.25H8C6.20735 19.2445 4.75549 17.7926 4.75 16V8C4.75549 6.20735 6.20735 4.75549 8 4.75H16C17.7926 4.75549 19.2445 6.20735 19.25 8V16ZM16.75 8.25C17.3023 8.25 17.75 7.80228 17.75 7.25C17.75 6.69772 17.3023 6.25 16.75 6.25C16.1977 6.25 15.75 6.69772 15.75 7.25C15.75 7.80228 16.1977 8.25 16.75 8.25ZM12 7.5C9.51472 7.5 7.5 9.51472 7.5 12C7.5 14.4853 9.51472 16.5 12 16.5C14.4853 16.5 16.5 14.4853 16.5 12C16.5027 10.8057 16.0294 9.65957 15.1849 8.81508C14.3404 7.97059 13.1943 7.49734 12 7.5ZM9.25 12C9.25 13.5188 10.4812 14.75 12 14.75C13.5188 14.75 14.75 13.5188 14.75 12C14.75 10.4812 13.5188 9.25 12 9.25C10.4812 9.25 9.25 10.4812 9.25 12Z" fill="CurrentColor"></path>
+                    </svg></div>
+                </a>
+                <a href="#" class="navbar21_social-link w-inline-block">
+                  <div class="icon-embed-xsmall w-embed"><svg width="100%" height="100%" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M20.5686 4.77345C21.5163 5.02692 22.2555 5.76903 22.5118 6.71673C23.1821 9.42042 23.1385 14.5321 22.5259 17.278C22.2724 18.2257 21.5303 18.965 20.5826 19.2213C17.9071 19.8831 5.92356 19.8015 3.40294 19.2213C2.45524 18.9678 1.71595 18.2257 1.45966 17.278C0.827391 14.7011 0.871044 9.25144 1.44558 6.73081C1.69905 5.78311 2.44116 5.04382 3.38886 4.78753C6.96561 4.0412 19.2956 4.282 20.5686 4.77345ZM9.86682 8.70227L15.6122 11.9974L9.86682 15.2925V8.70227Z" fill="CurrentColor"></path>
+                    </svg></div>
+                </a>
+              </div>
+              <div class="navbar21_bottom-background-overlay-tablet"></div>
+            </div>
+          </div>
+        </nav>
+        <div class="display-inlineflex">
+          <a href="account/login.html" class="link-block-8 w-inline-block">
+            <div class="icon-header-copy w-embed"><svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="fi_1144760">
+                <path d="m437.019531 74.980469c-48.351562-48.351563-112.640625-74.980469-181.019531-74.980469s-132.667969 26.628906-181.019531 74.980469c-48.351563 48.351562-74.980469 112.640625-74.980469 181.019531s26.628906 132.667969 74.980469 181.019531c48.351562 48.351563 112.640625 74.980469 181.019531 74.980469s132.667969-26.628906 181.019531-74.980469c48.351563-48.351562 74.980469-112.640625 74.980469-181.019531s-26.628906-132.667969-74.980469-181.019531zm-325.914062 354.316406c8.453125-72.734375 70.988281-128.890625 144.894531-128.890625 38.960938 0 75.597656 15.179688 103.15625 42.734375 23.28125 23.285156 37.964844 53.6875 41.742188 86.152344-39.257813 32.878906-89.804688 52.707031-144.898438 52.707031s-105.636719-19.824219-144.894531-52.703125zm144.894531-159.789063c-42.871094 0-77.753906-34.882812-77.753906-77.753906 0-42.875 34.882812-77.753906 77.753906-77.753906s77.753906 34.878906 77.753906 77.753906c0 42.871094-34.882812 77.753906-77.753906 77.753906zm170.71875 134.425782c-7.644531-30.820313-23.585938-59.238282-46.351562-82.003906-18.4375-18.4375-40.25-32.269532-64.039063-40.9375 28.597656-19.394532 47.425781-52.160157 47.425781-89.238282 0-59.414062-48.339844-107.753906-107.753906-107.753906s-107.753906 48.339844-107.753906 107.753906c0 37.097656 18.84375 69.875 47.464844 89.265625-21.886719 7.976563-42.140626 20.308594-59.566407 36.542969-25.234375 23.5-42.757812 53.464844-50.882812 86.347656-34.410157-39.667968-55.261719-91.398437-55.261719-147.910156 0-124.617188 101.382812-226 226-226s226 101.382812 226 226c0 56.523438-20.859375 108.265625-55.28125 147.933594zm0 0"></path>
+              </svg></div>
+          </a><smootify-cart data-open="on-add" class="smootify-cart-3">
+            <div data-delay="0" data-hover="false" class="mini-cart_dropdown-3 w-dropdown">
+              <div class="mini-cart_button-3 w-dropdown-toggle"><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" class="mini-cart_icon">
+                  <path d="M0 0h24v24H0V0z" fill="none"></path>
+                  <path d="M15.55 13c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.37-.66-.11-1.48-.87-1.48H5.21l-.94-2H1v2h2l3.6 7.59-1.35 2.44C4.52 15.37 5.48 17 7 17h12v-2H7l1.1-2h7.45zM6.16 6h12.15l-2.76 5H8.53L6.16 6zM7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" fill="currentColor"></path>
+                </svg>
+                <div cart="count" class="cart_count-2">0</div>
+              </div>
+              <nav class="mini-cart_dropdown-list-3 w-dropdown-list">
+                <div class="mini-cart_form-dropdown w-form">
+                  <form id="email-form-2" name="email-form-2" data-name="Email Form 2" method="get" class="mini-cart_form" data-wf-page-id="66e825372201297ffe1bfa26" data-wf-element-id="5e62d822-6904-3f2e-bfd0-9bac3a76c13d">
+                    <div class="mini-cart_items"><cart-item>
+                        <div class="cart_item-wrapper">
+                          <div product="url" class="cart_image-wrapper"><button data-action="remove" class="button-6-remove is-remove"><img src="images/close_1.svg" loading="lazy" alt="" class="image-37"><svg viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M5.46967 5.46967C5.76256 5.17678 6.23744 5.17678 6.53033 5.46967L12 10.9393L17.4697 5.46967C17.7626 5.17678 18.2374 5.17678 18.5303 5.46967C18.8232 5.76256 18.8232 6.23744 18.5303 6.53033L13.0607 12L18.5303 17.4697C18.8232 17.7626 18.8232 18.2374 18.5303 18.5303C18.2374 18.8232 17.7626 18.8232 17.4697 18.5303L12 13.0607L6.53033 18.5303C6.23744 18.8232 5.76256 18.8232 5.46967 18.5303C5.17678 18.2374 5.17678 17.7626 5.46967 17.4697L10.9393 12L5.46967 6.53033C5.17678 6.23744 5.17678 5.76256 5.46967 5.46967Z" fill="white" class="path"></path>
+                              </svg></button><img cart-item="image" loading="lazy" alt="" src="https://d3e54v103j8qbb.cloudfront.net/plugins/Basic/assets/placeholder.60f9b1840c.svg" class="cart_item-image"></div>
+                          <div class="mini-cart_item-data">
+                            <div product="url" cart-item="title" class="text-weight-medium-6">Cart Item Title</div>
+                            <div cart-item="options" class="display-inlineflex gap-tiny">
+                              <div option="name" class="text-block-55">Name</div>
+                              <div>:</div>
+                              <div option="value" class="text-block-56">value</div>
+                            </div>
+                            <div class="display-flex-3 space-between">
+                              <div class="mini-cart_quantity-wrapper">
+                                <div cart-item="quantity" class="text-block-59">1</div>
+                                <div class="text-block-61">x</div>
+                                <div cart-item="price" class="text-block-60">4.5€</div>
+                                <div cart-item="total" class="mini-cart_item-total-2">4.5€</div>
+                              </div><quantity-input>
+                                <div class="add-to-cart_quantity-input"><button data-action="minus" class="add-to-cart_quantity-button"><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" class="svg-icon-qt">
+                                      <path d="M0 0h24v24H0z" fill="none"></path>
+                                      <path d="M19 13H5v-2h14v2z" fill="currentColor"></path>
+                                    </svg></button><input class="add-to-cart_quantity-field w-input" maxlength="256" name="field-4" data-name="Field 4" placeholder="1" type="number" id="field-4" required=""><button data-action="plus" class="add-to-cart_quantity-button"><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" class="svg-icon-qt">
+                                      <path d="M0 0h24v24H0z" fill="none"></path>
+                                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
+                                    </svg></button></div>
+                              </quantity-input>
+                            </div>
+                          </div>
+                        </div>
+                      </cart-item></div>
+                    <div class="mini-cart_footer">
+                      <div class="display-flex-3 space-between">
+                        <div class="text-block-57">Total</div>
+                        <div cart="total" class="text-block-58">300€</div>
+                      </div>
+                      <div class="mini-cart_button-wrapper">
+                        <a href="cart.html" class="button-6 is-secondary w-button">Ver Carrinho</a><input type="submit" data-wait="Aguarde..." class="button-6 w-button" value="Finalizar Compra">
+                      </div>
+                    </div>
+                  </form>
+                  <div class="mini-cart_success w-form-done"><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24" class="mini-cart_icon big">
+                      <path d="M0 0h24v24H0zm18.31 6l-2.76 5z" fill="none"></path>
+                      <path d="M11 9h2V6h3V4h-3V1h-2v3H8v2h3v3zm-4 9c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-9.83-3.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 4h-.01l-1.1 2-2.76 5H8.53l-.13-.27L6.16 6l-.95-2-.94-2H1v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.13 0-.25-.11-.25-.25z" fill="currentColor"></path>
+                    </svg>
+                    <div class="spacer-6"></div>
+                    <div class="empty-cart-label">Seu carrinho está vazio. Vamos mudar isso!</div>
+                    <div class="spacer-6"></div>
+                    <a href="loja.html" class="button-6 is-secondary w-button">Ir para Loja!</a>
+                  </div>
+                  <div class="mini-cart_error-message w-form-fail">
+                    <div class="mini-cart_error-label">Oops! Something went wrong while submitting the form.</div>
+                  </div>
+                </div>
+              </nav>
+            </div>
+          </smootify-cart>
+          <div class="navbar21_menu-button w-nav-button">
+            <div class="menu-icon4">
+              <div class="menu-icon4_wrapper">
+                <div data-w-id="5e62d822-6904-3f2e-bfd0-9bac3a76c180" class="menu-icon4_line-top"></div>
+                <div data-w-id="5e62d822-6904-3f2e-bfd0-9bac3a76c181" class="menu-icon4_line-middle">
+                  <div class="menu-icon_line-middle-top"></div>
+                  <div data-w-id="5e62d822-6904-3f2e-bfd0-9bac3a76c183" class="menu-icon_line-middle-base"></div>
+                </div>
+                <div data-w-id="5e62d822-6904-3f2e-bfd0-9bac3a76c184" class="menu-icon4_line-bottom"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <section class="global-sec">
+    <div class="global-pad-pages">
+      <h1 class="heading-12">Termos de Serviço</h1>
+      <div>Bem-vindo ao website iwowatch.com.br, onde todos os serviços são ofertados pela empresa GSB E-COMMERCE, cujo nome/ função social é “GSB E-COMMERCE LTDA”, inscrito sob o CNPJ nº 54.772.229/0001-73, com endereço na R. Asteca, 29 - Saúde - CEP: 13.800-511 - Mogi Mirim - São Paulo<br><br>Avisamos previamente que ao acessar esse site você concorda tacitamente com as disposições contidas nesse documento, por isso muito atenção ao ler cada uma das cláusulas e obrigações dispostas a seguir:<br><br>1.Do Objeto<br><br>Essa plataforma tem como finalidade de “e-commerce”, ou seja, disponibilizar a venda de produtos e serviços online disponibilizados na nossa plataforma ou aplicativo. 2. Da reserva de produtos<br><br>2.1 O nosso website não trabalha com nenhuma possibilidade de reservar qualquer um dos produtos ofertados em nossa plataforma.<br><br>2.2 O fato de o produto estar no carrinho de compras não é tido como uma reserva e não impossibilita que outras pessoas possam adquirir o produto e eles venham a se esgotar.<br><br>3. Das obrigações do cliente<br><br>3.1 O cliente deverá informar os dados de forma completa e correta no momento de cadastro em nossa plataforma.<br><br>3.2 É responsabilidade do cliente qualquer erro na escrita ou na transmissão errônea dos dados.<br><br>3.3 Para efetuar qualquer compra em nosso website ou adicionar produtos ao carrinho é necessário logar com o usuário e senha que foi fornecido no momento do cadastro.<br><br>3.4 Não informar os seus dados de login a terceiros sob pena de ser responsabilizado por qualquer conduta advinda desse uso.<br><br>3.5 Cada cliente só poderá efetuar um cadastro, não sendo aceito mais de uma conta por CPF. 3.6 Usar a plataforma respeitando a ética, bons costumes, legislações e ordenamentos vigentes no país, sob pena de sofrer sanções.<br><br>3.7 Ser maior de idade (18 anos) e ter capacidade plena para realizar o cadastro e efetuar compras em nossa plataforma.<br><br>3.7.1 Se um menor de idade ou pessoa física sem capacidade plena vir a adquirir algum produto ou serviço ofertado em nossa plataforma, entenderemos que os responsáveis autorizaram, respondendo esses por toda e qualquer situação que advir, bem como pela compra.<br><br>3.8 Não comentar ou enviar imagens nas avaliações que possam ir de encontro com a ética e o respeito, ou que tenha cunho difamatório, ofensivo, de ódio ou preconceituoso.<br><br>3.9 O primeiro login de acesso será feito através de um link enviado para o seu e-mail cadastrado.<br><br>3.10 Não fornecer qualquer informação falsa, fraudulenta ou que não seja correspondente aos seus dados.<br><br>4. Das obrigações do proprietário do e-commerce<br><br>4.1 Informar de forma ostensiva e verdadeira sobre as características e especificações do produto disponível para venda de forma clara e completa. ( Ex: Cores, altura, material ou largura).<br><br>4.2 Enviar os produtos dentro do prazo estabelecido.<br><br>4.3 Disponibilizar uma plataforma segura.<br><br>4.4 Disponibilizar imagens, áudios e vídeos informativos sobre os produtos ofertados, e condizentes com o que será entregue ao cliente.<br><br>4.5 Emitir a nota fiscal do produto que será enviado e enviá-la ao cliente junto do produto.<br><br>4.6 Informar como deve ocorrer o manuseio, a limpeza ou lavagem do produto e qualquer informação considerada relevante relacionada ao produto.<br><br>5. Isenção de responsabilidade<br><br>5.1 Não nos responsabilizamos pelo mau uso ou manuseio errado do produto, bem como de qualquer dano que possa ocorrer na instalação de qualquer produto adquirido em nossa plataforma.<br><br>5.2 Todos os produtos que vendemos estão dentro dos padrões e condições que vem de fábrica, do distribuidor ou da empresa que revendeu o produto.<br><br>5.3 Fornecemos todas as informações pertinentes relacionadas ao produto, bem como os mesmos vão acompanhados de instruções de uso e cuidados em suas caixas ou através de manual de instruções.<br><br>6. Da Propriedade intelectual<br><br>6.1 Todo o design e paginação são de propriedade do nosso website, e foram desenvolvidos por um prestador de serviços que foi contratado para tal finalidade.<br><br>6.2 Toda imagem, ilustração, obras de arte, HTML, nomes comerciais, softwares ou vídeo disponibilizados em nossa plataforma por um dos gerenciadores da página são de nossa propriedade.<br><br>6.2.1 As imagens e vídeos são meramente ilustrativas, pois dependendo do monitor ou da tela do aparelho eletrônico o mesmo pode apresentar variação de cores ou tons.<br><br>6.3 A logo, a marca e toda a aparência da webempresa/empresa são de nossa propriedade.<br><br>6.4 É vedada a cópia sem autorização de qualquer imagem, vídeo, design, áudios, aparência ou descrições de produtos existentes em nossa web página, sob pena se responder por sanções quem desobedecer.<br><br>6.5 Não nos responsabilizamos por links externos que possam vir a aparecer em nossa página.<br><br>6.5.1 Há algumas áreas que poderão apresentar propagandas ou divulgação de links, mas não temos qualquer tipo de relação, por isso muito cuidado ao navegar por essas páginas e ao fornecer os seus dados, pois navegar por essas páginas é responsabilidade do usuário/cliente.<br><br>6.6 Nada contido em nossa web página garante o direito a concessão de licença ou direito de uso sem o consentimento expresso de um dos gerenciadores da página ou do proprietário da página.<br><br>6.7 O consentimento de cópia ou compartilhamento deve vir por escrito de forma clara e expressa.<br><br>6.8 É vedado compartilhar, copiar, plagiar ou disponibilizar qualquer conteúdo, foto, vídeo ou áudio encontrado em nosso site sem consentimento expresso.<br><br>7. Formas de pagamento<br><br>7.1 As formas de pagamento aceitas em nosso e-commerce são cartão de crédito e débito, ou boleto bancário. 7.2 O boleto bancário poderá ser emitido no momento em que você escolheu a opção, preencheu os dados requisitados e gerou.<br><br>7.2.1 O boleto tem vencimento na data exposta no mesmo, não sendo aceito após a data de vencimento.<br><br>7.2.2 Se o boleto vencer e o pagamento não tiver sido efetuado, o produto voltará a ficar disponível para venda e será necessário realizar uma nova compra para adquiri-lo.<br><br>7.3 O produto será enviado assim que o pagamento for processado, registrado e confirmado em nossa plataforma.<br><br>7.4 Qualquer outra forma de pagamento não é aceita por nosso e-commerce.<br><br>7.5 Cupons de descontos são aceitos, desde que tenhamos disponibilizados, estando sujeitos a esgotarem ou terem vigência cancelada a qualquer momento.<br><br>7.5 Se o cliente quiser parcelar o produto em mais vezes deverá arcar com os juros da operadora.<br><br>7.6 Para solicitar o estorno entre em contato com a nossa Central de Atendimento ou SAC.<br><br>8. Entrega e envio do produto<br><br>8.1 O produto será enviado assim que o pagamento for confirmado, podendo ser enviado até 3 dias após a confirmação do pagamento.<br><br>8.2 Os custos de envio e entrega estarão dispostos no momento em que você estiver quase finalizando a compra, na aba de frete/entrega/envio, onde você informará o seu endereço e CEP.<br><br>8.3 O cliente pagará pela entrega e o envio do produto com faixas pré-definidas, ou de acordo com o peso padrão da categoria.<br><br>9. Troca e devolução<br><br>9.1 O cliente poderá devolver o produto ou trocar que foi adquirido em nosso e-commerce em até 7 dias, seja qual for a razão, conforme a previsão expressa no Código de Defesa do Consumidor em seu art. 49.<br><br>9.1.1 Para que ocorra a troca ou a devolução é necessário que o produto esteja conforme foi entregue, com todos os acessórios, manual e embalagem, caixa.<br><br>9.1.2 O produto que será devolvido ou trocado não poderá apresentar qualquer marca de uso, como o produto estar trincado, riscado ou apresentar sinais de quedas.<br><br>9.2 Se você requisitou a troca do produto o novo será enviado para o endereço e você será notificado sobre o envio via e-mail.<br><br>9.3 Se você solicitou o reembolso, a devolução do valor ocorrerá da forma como foi efetuado o pagamento. 9.3.1 Se foi via cartão de crédito ou débito o valor será creditado ou debitado na fatura atual ou na seguinte do cartão, pois informaremos a administradora do cartão.<br><br>9.3.2 Se o pagamento foi feito via boleto bancário, o valor de reembolso será restituído dentro de 30 dias úteis diretamente na conta que solicitaremos no momento de sua requisição de devolução.<br><br>10. Política de Privacidade e Proteção de Dados<br><br>10.1 Você pode conferir a nossa política de privacidade no link de rodapé, onde informamos como ocorre a coleta e o tratamentos dos dados cadastrados em nosso site, bem como da navegação.<br><br>11. Do Foro<br><br>11. Fica eleito o foro da Cidade da nossa empresa, para dirimir quaisquer controvérsias, dúvidas, desentendimentos, litígios ou questões advindas da relação cliente e e-commerce, mesmo que possa existir algum local, por mais privilegiado que possa ser.<br><br>12. Do documento<br><br>12.1 Este documento foi feito pelo Advogado Diego Castro (OAB/PI 15.613) e foi modificado com permissão para uso neste site. Sua forma original pode ser encontrado no seu site.</div>
+    </div>
+  </section>
+  <section class="section-15">
+    <div class="div-block-46"><img src="images/Logo-Icone-Cinza.svg" loading="lazy" alt="" class="image-31"></div>
+    <div class="global-pad-footer">
+      <div class="div-block-44">
+        <h1 class="text-footer">Atendimento</h1>
+        <div class="text-block-20"><strong class="bold-text-3">Horário de atendimento:</strong><br></div>
+        <div class="text-block-20"><strong class="text-footer-regular">Segunda à Sexta-feira:<br>08:00 às 18:00<br>Sábados e Feriados:<br>09:00 às 13:00</strong><br></div>
+        <div class="div-block-45"><img src="images/mail.svg" loading="lazy" alt="" class="image-30">
+          <div class="text-block-21">sac@iwowatch.com.br<br></div>
+        </div>
+      </div>
+      <div class="div-block-44">
+        <h1 class="text-footer">Institucional<br></h1>
+        <div class="text-block-20"><strong class="text-footer-regularr-bold">A Iwo Watch é uma loja virtual<br>especializada em produtos de tecnologia.</strong><br></div>
+        <div class="text-block-20"><strong class="text-footer-regular">R. Asteca, 29 – Saúde<br>sac@iwowatch.com.br</strong><br></div>
+        <div class="text-block-20"><strong class="text-footer-regular">CNPJ: 54.772.229/0001-73</strong><br></div>
+        <a href="https://instagram.com/iwodobrasil" target="_blank" class="w-inline-block"><img src="images/instagram.svg" loading="lazy" alt="" class="image-32"></a>
+        <h1 class="text-footer">Conheça nosso Blog!<br></h1>
+        <a href="blog/principal.html" class="linkblog">Blog Iwo Watch</a>
+      </div>
+      <div class="div-block-44">
+        <h1 class="text-footer">Central do Cliente<br></h1>
+        <a href="politica-de-privacidade.html" class="link-2">Política de Privacidade</a>
+        <a href="politica-de-devolucoes-e-reembolsos.html" class="link-2">Política de Devoluções<br></a>
+        <a href="politica-de-envios.html" class="link-2">Política de Envios</a>
+        <a href="termos-de-servico.html" aria-current="page" class="link-2 w--current">Termos de Serviços</a>
+        <a href="perguntas-frequentes.html" class="link-2">Perguntas Frequentes</a>
+        <a href="contato.html" class="link-2">Contato</a>
+      </div>
+      <div class="div-block-44">
+        <h1 class="text-footer">Meus Pedidos<br></h1>
+        <a href="account/login.html" class="link-2">Minha Conta<br></a>
+        <a href="account/login.html" class="link-2">Rastreio</a>
+        <h1 class="text-footer">Formas de Pagamento<br></h1>
+        <div class="div-block-47"><img src="images/forma-de-pagamento-04-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-05-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-10-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-03-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-06-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-07-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-08-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-09-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-02-1.svg" loading="lazy" alt=""><img src="images/forma-de-pagamento-01-1.svg" loading="lazy" alt=""></div>
+      </div>
+    </div>
+    <div class="div-footer-cnpj">
+      <h1 class="heading-13">GSB E-COMMERCE LTDA – CNPJ: 54.772.229/0001-73 – R. Asteca, 29 – SL 02 - Saúde – SP – sac@iwowatch.com.br</h1>
+    </div>
+  </section>
+  <script src="https://d3e54v103j8qbb.cloudfront.net/js/jquery-3.5.1.min.dc5e7f18c8.js?site=66db592adddbd3479d3ff7aa" type="text/javascript" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+  <script src="js/webflow.js" type="text/javascript"></script>
+</body>
+</html>
