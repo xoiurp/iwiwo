@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "node:path";
 
 // Clean URL ↔ Webflow HTML mapping.
 // Entries here expose the exported static pages from `public/` at ergonomic
@@ -60,9 +59,6 @@ const LEGACY_ACCOUNT_REDIRECTS: Array<[string, string]> = [
 ];
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: path.resolve(__dirname),
-  },
   async rewrites() {
     return STATIC_PAGE_MAP.map(([source, destination]) => ({ source, destination }));
   },
