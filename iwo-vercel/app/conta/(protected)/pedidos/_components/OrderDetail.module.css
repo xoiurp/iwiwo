@@ -1,0 +1,314 @@
+/* app/conta/(protected)/pedidos/_components/OrderDetail.module.css
+   Scoped styles for the single-order detail view. Sticky back bar up top,
+   summary / items / customer / next-steps blocks stacked. */
+
+.wrap {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px 64px;
+  color: #1a1a1a;
+}
+
+.stickyBar {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.backLink {
+  color: #1a1a1a;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orderTitle {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.orderMeta {
+  color: #666;
+  font-size: 13px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mpStatus {
+  font-size: 12px;
+  color: #666;
+  background: #f7f7f8;
+  border: 1px solid #e5e7eb;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.itemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.itemsTable th {
+  text-align: left;
+  font-weight: 600;
+  color: #666;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.itemsTable th.right,
+.itemsTable td.right {
+  text-align: right;
+}
+
+.itemsTable td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f1f3;
+  vertical-align: middle;
+  color: #1a1a1a;
+}
+
+.itemsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.itemCell {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.itemImg {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f7f7f8;
+  border: 1px solid #e5e7eb;
+  flex: 0 0 auto;
+}
+
+.itemName {
+  font-weight: 500;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+
+.itemName a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.itemName a:hover {
+  text-decoration: underline;
+}
+
+.variantName {
+  color: #666;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 360px;
+  margin-left: auto;
+  font-size: 14px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  color: #666;
+}
+
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 16px;
+  color: #1a1a1a;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.customerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  font-size: 14px;
+}
+
+.customerLabel {
+  color: #666;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 2px;
+}
+
+.customerValue {
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.next {
+  background: #f7f7f8;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.nextText {
+  margin: 0 0 12px;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+.nextCta {
+  display: inline-block;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nextCta:hover {
+  background: #1a1a1a;
+}
+
+.nextCtaGhost {
+  display: inline-block;
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.nextCtaGhost:hover {
+  border-color: #1a1a1a;
+}
+
+@media (max-width: 720px) {
+  .wrap {
+    padding: 0 16px 48px;
+  }
+
+  .orderTitle {
+    font-size: 22px;
+  }
+
+  .itemsTable thead {
+    display: none;
+  }
+
+  .itemsTable,
+  .itemsTable tbody,
+  .itemsTable tr,
+  .itemsTable td {
+    display: block;
+    width: 100%;
+  }
+
+  .itemsTable tr {
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f1f3;
+  }
+
+  .itemsTable tr:last-child {
+    border-bottom: none;
+  }
+
+  .itemsTable td {
+    padding: 2px 0;
+    border: none;
+  }
+
+  .itemsTable td.right {
+    text-align: left;
+  }
+
+  .itemsTable td[data-label]::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 100px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #666;
+    font-weight: 600;
+    margin-right: 8px;
+  }
+
+  .summary {
+    max-width: none;
+    margin-left: 0;
+  }
+}

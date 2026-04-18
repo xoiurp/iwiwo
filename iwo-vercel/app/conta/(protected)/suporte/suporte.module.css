@@ -1,0 +1,386 @@
+/* app/conta/(protected)/suporte/suporte.module.css
+   Scoped styles for the customer support area. Chat bubbles follow the W2-3
+   spec: customer messages right-aligned on #000 with white text, admin
+   messages left-aligned on #fff with black text and a small admin marker.
+   Bubble corners are asymmetric — the bottom corner on the sender's side is
+   flat so the shape visually "points" back to the author. */
+
+.wrap {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  color: #1a1a1a;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.newCta {
+  display: inline-block;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.newCta:hover {
+  background: #1a1a1a;
+}
+
+.empty {
+  background: #f7f7f8;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.emptyText {
+  margin: 0 0 16px;
+  color: #666;
+  font-size: 15px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: block;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.card:hover {
+  border-color: #1a1a1a;
+  background: #fafafb;
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.cardSubject {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  word-break: break-word;
+}
+
+.cardMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.cardBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #666;
+}
+
+.cardLink {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* Detail page ------------------------------------------------------------ */
+
+.detailHeader {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.detailTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.detailSubject {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.detailMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.detailCreated {
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.backLink {
+  display: inline-block;
+  color: #666;
+  font-size: 13px;
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+
+.backLink:hover {
+  color: #1a1a1a;
+}
+
+/* Thread ----------------------------------------------------------------- */
+
+.thread {
+  background: #f7f7f8;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  max-width: 72%;
+}
+
+.rowCustomer {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.rowAdmin {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubbleCustomer {
+  background: #000;
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}
+
+.bubbleAdmin {
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+  border-bottom-left-radius: 2px;
+}
+
+.meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.adminTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.closedNotice {
+  margin-top: 20px;
+  background: #f7f7f8;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px 18px;
+  color: #666;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.closedNotice a {
+  color: #000;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.closedNotice a:hover {
+  text-decoration: underline;
+}
+
+/* New-ticket form -------------------------------------------------------- */
+
+.form {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #fff;
+  font-family: inherit;
+}
+
+.textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.submitBtn {
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cancelBtn {
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.errorBox {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .wrap {
+    padding: 20px 16px 48px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .row {
+    max-width: 88%;
+  }
+}

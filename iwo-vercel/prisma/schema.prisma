@@ -1,0 +1,420 @@
+// ============================================================================
+//  iwo-watch — Prisma Schema (canonical source of truth for Neon Postgres)
+//  Prisma 7 — datasource URL is configured in prisma.config.ts
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+//  ENUMS
+// ============================================================================
+//  NOTE: existing `orders.status` and `orders.mp_status` are VARCHAR(50) in the
+//  database (5 historical rows). We keep them as `String` at the Prisma layer
+//  to avoid destructive ALTERs during this baseline push. Enum validation is
+//  enforced at the application layer — see app/lib/orderStatus.ts (to be added
+//  by the API refactor track). The CouponKind and EmailStatus enums below are
+//  safe because those tables are new.
+
+enum CouponKind {
+  PERCENT
+  FIXED
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
+}
+
+enum TicketStatus {
+  OPEN
+  WAITING_CUSTOMER
+  ANSWERED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AuthorType {
+  CUSTOMER
+  ADMIN
+}
+
+model NewsletterSubscriber {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique @db.VarChar(255)
+  name        String?   @db.VarChar(255)
+  source      String?   @db.VarChar(255)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  confirmedAt DateTime? @map("confirmed_at")
+
+  @@index([isActive])
+  @@map("newsletter_subscribers")
+}
+
+// ============================================================================
+//  EXISTING TABLES — preserved shape from Neon introspection
+// ============================================================================
+
+model Product {
+  id                      Int       @id @default(autoincrement())
+  name                    String    @db.VarChar(255)
+  slug                    String    @unique @db.VarChar(255)
+  description             String?
+  descricaoLonga          String?   @map("descricao_longa")
+  image                   String?
+  productType             String?   @map("product_type") @db.VarChar(100)
+  vendor                  String?   @db.VarChar(100)
+  collections             String?   @db.VarChar(255)
+  price                   Decimal?  @db.Decimal(10, 2)
+  priceFormatted          String?   @map("price_formatted") @db.VarChar(50)
+  compareAtPrice          Decimal?  @map("compare_at_price") @db.Decimal(10, 2)
+  compareAtPriceFormatted String?   @map("compare_at_price_formatted") @db.VarChar(50)
+  seoTitle                String?   @map("seo_title") @db.VarChar(255)
+  seoDescription          String?   @map("seo_description")
+  webflowCollectionId     String?   @map("webflow_collection_id") @db.VarChar(100)
+  webflowLocaleId         String?   @map("webflow_locale_id") @db.VarChar(100)
+  webflowItemId           String?   @map("webflow_item_id") @db.VarChar(100)
+  shopifyId               String?   @map("shopify_id") @db.VarChar(100)
+  shpid                   String?   @db.VarChar(50)
+  archived                Boolean?  @default(false)
+  draft                   Boolean?  @default(false)
+  isGiftCard              Boolean?  @default(false) @map("is_gift_card")
+  createdOn               DateTime? @map("created_on") @db.Timestamp(6)
+  updatedOn               DateTime? @map("updated_on") @db.Timestamp(6)
+  publishedOn             DateTime? @map("published_on") @db.Timestamp(6)
+  tamanhoDaCaixa          String?   @map("tamanho_da_caixa") @db.VarChar(50)
+  tipoDeTela              String?   @map("tipo_de_tela") @db.VarChar(100)
+  tamanhoDisplay          String?   @map("tamanho_display") @db.VarChar(50)
+  pedometro               Boolean?  @default(false)
+  monitoramentoDeSono     Boolean?  @default(false) @map("monitoramento_de_sono")
+  saudeFeminina           Boolean?  @default(false) @map("saude_feminina")
+  ecg                     Boolean?  @default(false)
+  pressaoArterial         Boolean?  @default(false) @map("pressao_arterial")
+  frequenciaCardiaca      Boolean?  @default(false) @map("frequencia_cardiaca")
+  oxigenioNoSangue        Boolean?  @default(false) @map("oxigenio_no_sangue")
+  capacidadeDaBateria     String?   @map("capacidade_da_bateria") @db.VarChar(50)
+  duracaoDaBateria        String?   @map("duracao_da_bateria") @db.VarChar(100)
+  acompanhaCarregador     Boolean?  @default(false) @map("acompanha_carregador")
+  bluetooth               String?   @db.VarChar(50)
+  comGps                  String?   @map("com_gps") @db.VarChar(255)
+  comWiFi                 Boolean?  @default(false) @map("com_wi_fi")
+  redeMovel               Boolean?  @default(false) @map("rede_movel")
+  comNfc                  String?   @map("com_nfc") @db.VarChar(255)
+  memoriaInterna          String?   @map("memoria_interna") @db.VarChar(50)
+  musicaLocal             Boolean?  @default(false) @map("musica_local")
+  leitorDeEbooks          Boolean?  @default(false) @map("leitor_de_ebooks")
+  gravadorDeVoz           Boolean?  @default(false) @map("gravador_de_voz")
+  comChatGpt              Boolean?  @default(false) @map("com_chat_gpt")
+  assistenteDeVoz         Boolean?  @default(false) @map("assistente_de_voz")
+  controleDeMusica        Boolean?  @default(false) @map("controle_de_musica")
+  aplicativo              String?   @db.VarChar(100)
+  cor1                    String?   @map("cor_1") @db.VarChar(100)
+  cor2                    String?   @map("cor_2") @db.VarChar(100)
+  cor3                    String?   @map("cor_3") @db.VarChar(100)
+  url                     String?
+  images                  Json?     @default("[]")
+
+  // Relations
+  variants   ProductVariant[]
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@index([collections], map: "idx_products_collections")
+  @@index([price], map: "idx_products_price")
+  @@index([productType], map: "idx_products_product_type")
+  @@index([slug], map: "idx_products_slug")
+  @@map("products")
+}
+
+model ProductVariant {
+  id             Int       @id @default(autoincrement())
+  productId      Int       @map("product_id")
+  name           String    @db.VarChar(255)
+  sku            String?   @db.VarChar(100)
+  price          Decimal?  @db.Decimal(10, 2)
+  compareAtPrice Decimal?  @map("compare_at_price") @db.Decimal(10, 2)
+  stock          Int?      @default(0)
+  color          String?   @db.VarChar(50)
+  size           String?   @db.VarChar(50)
+  images         Json?     @default("[]")
+  isActive       Boolean?  @default(true) @map("is_active")
+  createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  // Relations
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@map("product_variants")
+}
+
+model Order {
+  id         Int       @id @default(autoincrement())
+  // Kept as String (not enum) for backward compatibility with 5 legacy rows.
+  // Validate at app layer. Migrate to enum in a future dedicated pass.
+  status     String?   @default("pending") @db.VarChar(50)
+  total      Decimal?  @db.Decimal(10, 2)
+  items      Json? // Denormalized snapshot; coexists with OrderItem rows
+  payerEmail String?   @map("payer_email") @db.VarChar(255)
+  payerName  String?   @map("payer_name") @db.VarChar(255)
+  payerCpf   String?   @map("payer_cpf") @db.VarChar(20)
+  mpOrderId  String?   @map("mp_order_id") @db.VarChar(100)
+  mpStatus   String?   @map("mp_status") @db.VarChar(50)
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt  DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  // New: optional link to a registered customer (nullable for legacy / guest orders)
+  customerId Int?      @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  orderItems OrderItem[]
+
+  @@index([customerId])
+  @@map("orders")
+}
+
+// ============================================================================
+//  NEW TABLES
+// ============================================================================
+
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int      @map("order_id")
+  productId   Int?     @map("product_id")
+  variantId   Int?     @map("variant_id")
+  productName String   @map("product_name") @db.VarChar(255)
+  variantName String?  @map("variant_name") @db.VarChar(255)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(10, 2)
+  quantity    Int
+  totalPrice  Decimal  @map("total_price") @db.Decimal(10, 2)
+  image       String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  userId    String    @unique @map("user_id")
+  email     String    @unique @db.VarChar(255)
+  name      String?   @db.VarChar(255)
+  phone     String?   @db.VarChar(30)
+  cpf       String?   @unique @db.VarChar(14)
+  birthDate DateTime? @map("birth_date") @db.Date
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addresses      Address[]
+  orders         Order[]
+  carts          Cart[]
+  supportTickets SupportTicket[]
+
+  @@map("customers")
+}
+
+model Address {
+  id           Int      @id @default(autoincrement())
+  customerId   Int      @map("customer_id")
+  label        String?  @db.VarChar(50)
+  recipient    String   @db.VarChar(255)
+  cep          String   @db.VarChar(9)
+  street       String   @db.VarChar(255)
+  number       String   @db.VarChar(20)
+  complement   String?  @db.VarChar(100)
+  neighborhood String   @db.VarChar(100)
+  city         String   @db.VarChar(100)
+  state        String   @db.VarChar(2)
+  country      String   @default("BR") @db.VarChar(2)
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("addresses")
+}
+
+model Cart {
+  id         String    @id @default(cuid())
+  customerId Int?      @map("customer_id")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  expiresAt  DateTime? @map("expires_at") @db.Timestamp(6)
+
+  customer Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    CartItem[]
+
+  @@index([customerId])
+  @@index([expiresAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    String   @map("cart_id")
+  productId Int      @map("product_id")
+  variantId Int?     @map("variant_id")
+  quantity  Int      @default(1)
+  addedAt   DateTime @default(now()) @map("added_at") @db.Timestamp(6)
+
+  cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@unique([cartId, productId, variantId])
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+model Coupon {
+  id            Int        @id @default(autoincrement())
+  code          String     @unique @db.VarChar(50)
+  description   String?
+  kind          CouponKind
+  value         Decimal    @db.Decimal(10, 2)
+  minOrderTotal Decimal?   @map("min_order_total") @db.Decimal(10, 2)
+  maxUses       Int?       @map("max_uses")
+  usedCount     Int        @default(0) @map("used_count")
+  validFrom     DateTime?  @map("valid_from") @db.Timestamp(6)
+  validUntil    DateTime?  @map("valid_until") @db.Timestamp(6)
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("coupons")
+}
+
+model EmailLog {
+  id        Int         @id @default(autoincrement())
+  to        String      @db.VarChar(255)
+  template  String      @db.VarChar(100)
+  subject   String      @db.VarChar(500)
+  status    EmailStatus @default(PENDING)
+  resendId  String?     @map("resend_id") @db.VarChar(100)
+  error     String?
+  metadata  Json?
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
+  sentAt    DateTime?   @map("sent_at") @db.Timestamp(6)
+
+  @@index([to])
+  @@index([status])
+  @@index([template])
+  @@map("email_logs")
+}
+
+// ============================================================================
+//  NEXTAUTH v5 (Auth.js) — Prisma adapter tables
+//  Ref: https://authjs.dev/reference/adapter/prisma
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  passwordHash  String?   @map("password_hash")
+  image         String?
+
+  accounts Account[]
+  sessions Session[]
+  customer Customer?
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================================
+//  SUPPORT TICKETS
+// ============================================================================
+
+model SupportTicket {
+  id          Int              @id @default(autoincrement())
+  customerId  Int              @map("customer_id")
+  subject     String           @db.VarChar(255)
+  description String           @db.Text
+  status      TicketStatus     @default(OPEN)
+  priority    TicketPriority   @default(MEDIUM)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  closedAt    DateTime?        @map("closed_at")
+  customer    Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  messages    SupportMessage[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([priority])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id         Int           @id @default(autoincrement())
+  ticketId   Int           @map("ticket_id")
+  authorType AuthorType    @map("author_type")
+  authorName String        @map("author_name") @db.VarChar(255)
+  body       String        @db.Text
+  createdAt  DateTime      @default(now()) @map("created_at")
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("support_messages")
+}

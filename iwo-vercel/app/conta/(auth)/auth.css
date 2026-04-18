@@ -1,0 +1,239 @@
+/* app/conta/(auth)/auth.css
+ * Shared styles for the auth route group. Uses the same Webflow-aligned
+ * palette as the rest of the storefront: mono brand black, neutral greys,
+ * rounded 6-8px radii. Scoped via BEM-ish class names to avoid colliding
+ * with the main site's globals. */
+
+.auth-shell {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #f7f7f8;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  color: #1a1a1a;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.auth-logo-link {
+  display: flex;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.auth-logo {
+  width: 120px;
+  height: auto;
+  display: block;
+}
+
+.auth-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.auth-label-optional {
+  font-size: 12px;
+  color: #666;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.auth-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font: inherit;
+  color: #1a1a1a;
+  background: #fff;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+.auth-input:disabled {
+  background: #f7f7f8;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.auth-hint {
+  font-size: 12px;
+  color: #666;
+  margin: 2px 0 0;
+}
+
+.auth-error {
+  font-size: 13px;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.auth-error a {
+  color: #dc2626;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.auth-success {
+  font-size: 13px;
+  color: #166534;
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.auth-success-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.auth-success-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.auth-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 120ms ease, border-color 120ms ease;
+  margin-top: 4px;
+}
+
+.auth-button-primary:hover {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+}
+
+.auth-button-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-button-link {
+  background: transparent;
+  border: 0;
+  color: #1a1a1a;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.auth-button-link:hover {
+  color: #000;
+}
+
+.auth-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+.auth-footer-link {
+  font-size: 13px;
+  color: #666;
+  text-decoration: none;
+}
+
+.auth-footer-link a,
+.auth-footer-link.is-link {
+  color: #1a1a1a;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.auth-footer-link a:hover,
+.auth-footer-link.is-link:hover {
+  color: #000;
+}

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Checkout — IWO Watch</title>
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <link href="/css/normalize.css" rel="stylesheet" type="text/css">
+  <link href="/images/favicon.svg" rel="shortcut icon" type="image/x-icon">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #1a1a2e; }
+    .checkout-container { max-width: 960px; margin: 0 auto; padding: 24px 16px; display: grid; grid-template-columns: 1fr 380px; gap: 24px; min-height: 100vh; }
+    @media (max-width: 768px) { .checkout-container { grid-template-columns: 1fr; } }
+    .checkout-header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; margin-bottom: 8px; }
+    .checkout-header a { text-decoration: none; color: #1a1a2e; }
+    .checkout-header h1 { font-size: 20px; font-weight: 700; }
+    .checkout-header .back { font-size: 13px; color: #666; }
+    .card { background: #fff; border-radius: 10px; padding: 24px; border: 1px solid #e5e7eb; margin-bottom: 16px; }
+    .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #1a1a2e; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 6px; }
+    .field input, .field select { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.15s; background: #fff; }
+    .field input:focus, .field select:focus { border-color: #2563eb; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .pay-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .pay-tab { flex: 1; padding: 12px; text-align: center; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; background: #fff; transition: all 0.15s; color: #666; }
+    .pay-tab.active { border-color: #000; background: #000; color: #fff; }
+    .pay-tab:hover:not(.active) { border-color: #999; }
+    .summary-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+    .summary-item:last-child { border-bottom: none; }
+    .summary-item img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; background: #f5f5f5; }
+    .summary-item-info { flex: 1; }
+    .summary-item-name { font-size: 13px; font-weight: 600; }
+    .summary-item-variant { font-size: 11px; color: #888; }
+    .summary-item-price { font-size: 13px; font-weight: 700; text-align: right; white-space: nowrap; }
+    .summary-total { display: flex; justify-content: space-between; padding-top: 16px; border-top: 1px solid #e5e7eb; margin-top: 8px; }
+    .summary-total-label { font-size: 14px; color: #666; }
+    .summary-total-value { font-size: 20px; font-weight: 700; }
+    .btn-primary { width: 100%; padding: 14px; background: #000; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; margin-top: 16px; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .msg-error { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; border: 1px solid #fecaca; }
+    .msg-success { background: #f0fdf4; color: #16a34a; padding: 16px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; border: 1px solid #bbf7d0; text-align: center; }
+    .pix-result { text-align: center; }
+    .pix-result img { max-width: 200px; margin: 16px auto; display: block; }
+    .pix-code { background: #f5f5f5; padding: 12px; border-radius: 6px; font-size: 12px; word-break: break-all; cursor: pointer; margin: 12px 0; }
+    .pix-code:hover { background: #e5e7eb; }
+    .empty-cart { text-align: center; padding: 60px 20px; grid-column: 1 / -1; }
+    .empty-cart h2 { font-size: 18px; margin-bottom: 12px; }
+    .empty-cart a { color: #2563eb; text-decoration: none; font-weight: 600; }
+    /* Secure Fields iframes styling */
+    .mp-field { min-height: 42px; padding: 0; border: 1px solid #ddd; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <!-- MercadoPago.JS V2 SDK — mandatory for device ID + Secure Fields -->
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+
+  <div class="checkout-container" id="checkout-root"></div>
+
+  <script>
+    // =============================================
+    // CONFIG
+    // =============================================
+    const MP_PUBLIC_KEY = 'APP_USR-48eee7bd-14ef-4eac-a392-37ba7529ddbb';
+    let mp = null;
+    let cardForm = null;
+
+    // =============================================
+    // CART HELPERS
+    // =============================================
+    const CART_KEY = 'iwo_cart';
+    function getCart() { try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch { return []; } }
+    function saveCart(items) { localStorage.setItem(CART_KEY, JSON.stringify(items)); }
+    function clearCart() { saveCart([]); }
+    function getCartTotal() { return getCart().reduce((s, i) => s + i.price * i.quantity, 0); }
+    function formatBRL(v) { return 'R$ ' + v.toFixed(2).replace('.', ','); }
+
+    // =============================================
+    // STATE
+    // =============================================
+    let paymentMethod = 'pix';
+    let processing = false;
+
+    // =============================================
+    // RENDER
+    // =============================================
+    function renderCheckout() {
+      const root = document.getElementById('checkout-root');
+      const cart = getCart();
+
+      if (cart.length === 0) {
+        root.innerHTML = `
+          <div class="checkout-header"><a href="/loja.html"><h1>IWO Watch</h1></a></div>
+          <div class="empty-cart">
+            <h2>Seu carrinho esta vazio</h2>
+            <p><a href="/loja.html">Voltar para a loja</a></p>
+          </div>`;
+        return;
+      }
+
+      const total = getCartTotal();
+      root.innerHTML = `
+        <div class="checkout-header">
+          <a href="/loja.html"><h1>IWO Watch</h1></a>
+          <a href="javascript:history.back()" class="back">&#8592; Voltar</a>
+        </div>
+        <div>
+          <div class="card">
+            <h2>Dados do cliente</h2>
+            <div class="grid2">
+              <div class="field"><label>Nome *</label><input id="f-first-name" placeholder="Seu nome" /></div>
+              <div class="field"><label>Sobrenome *</label><input id="f-last-name" placeholder="Seu sobrenome" /></div>
+            </div>
+            <div class="field"><label>E-mail *</label><input id="f-email" type="email" placeholder="seu@email.com" /></div>
+            <div class="grid2">
+              <div class="field"><label>CPF *</label><input id="f-cpf" placeholder="000.000.000-00" maxlength="14" /></div>
+              <div class="field"><label>Telefone</label><input id="f-phone" placeholder="(11) 99999-9999" /></div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Forma de pagamento</h2>
+            <div class="pay-tabs">
+              <div class="pay-tab active" onclick="setPayMethod('pix')">Pix</div>
+              <div class="pay-tab" onclick="setPayMethod('credit_card')">Cartao</div>
+              <div class="pay-tab" onclick="setPayMethod('boleto')">Boleto</div>
+            </div>
+            <div id="pay-form"></div>
+          </div>
+          <div id="checkout-error" style="display:none;" class="msg-error"></div>
+          <div id="checkout-result" style="display:none;"></div>
+          <button id="btn-pay" class="btn-primary" onclick="handlePay()">Pagar ${formatBRL(total)}</button>
+        </div>
+        <div>
+          <div class="card">
+            <h2>Resumo do pedido</h2>
+            ${cart.map(item => `
+              <div class="summary-item">
+                <img src="${item.image || ''}" alt="${item.name}" />
+                <div class="summary-item-info">
+                  <div class="summary-item-name">${item.name}</div>
+                  ${item.variantName ? `<div class="summary-item-variant">${item.variantName}</div>` : ''}
+                  <div style="font-size:12px;color:#888;">Qtd: ${item.quantity}</div>
+                </div>
+                <div class="summary-item-price">${formatBRL(item.price * item.quantity)}</div>
+              </div>`).join('')}
+            <div class="summary-total">
+              <span class="summary-total-label">Total</span>
+              <span class="summary-total-value">${formatBRL(total)}</span>
+            </div>
+          </div>
+        </div>`;
+
+      // Initialize MercadoPago SDK
+      mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
+      renderPayForm();
+    }
+
+    function renderPayForm() {
+      const container = document.getElementById('pay-form');
+      if (!container) return;
+
+      // Destroy previous card form if exists
+      if (cardForm) { try { cardForm.unmount(); } catch(e){} cardForm = null; }
+
+      if (paymentMethod === 'pix') {
+        container.innerHTML = `
+          <div style="padding:16px 0;text-align:center;color:#666;font-size:13px;">
+            <p>Ao clicar em "Pagar", voce recebera um <strong>QR Code Pix</strong> para pagamento instantaneo.</p>
+          </div>`;
+      } else if (paymentMethod === 'credit_card') {
+        container.innerHTML = `
+          <form id="card-form">
+            <div class="field" style="grid-column:1/-1;">
+              <label>Numero do cartao *</label>
+              <div id="cardNumber" class="mp-field"></div>
+            </div>
+            <div class="grid2">
+              <div class="field">
+                <label>Validade *</label>
+                <div id="expirationDate" class="mp-field"></div>
+              </div>
+              <div class="field">
+                <label>CVV *</label>
+                <div id="securityCode" class="mp-field"></div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Nome no cartao *</label>
+              <input id="f-card-name" placeholder="Como aparece no cartao" />
+            </div>
+            <div class="grid2">
+              <div class="field">
+                <label>Parcelas</label>
+                <select id="f-installments">
+                  <option value="1">1x sem juros</option>
+                  <option value="2">2x sem juros</option>
+                  <option value="3">3x sem juros</option>
+                  <option value="6">6x sem juros</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Documento</label>
+                <select id="f-doc-type">
+                  <option value="CPF">CPF</option>
+                </select>
+              </div>
+            </div>
+            <input type="hidden" id="cardToken" />
+            <input type="hidden" id="paymentMethodId" />
+            <div style="font-size:11px;color:#999;margin-top:8px;">Pagamento seguro processado pelo MercadoPago via Secure Fields.</div>
+          </form>`;
+
+        // Mount MercadoPago Secure Fields
+        setTimeout(() => mountCardForm(), 100);
+      } else if (paymentMethod === 'boleto') {
+        container.innerHTML = `
+          <div class="field"><label>Endereco *</label><input id="f-street" placeholder="Rua, numero" /></div>
+          <div class="grid3">
+            <div class="field"><label>CEP *</label><input id="f-zip" placeholder="00000-000" maxlength="9" /></div>
+            <div class="field"><label>Cidade *</label><input id="f-city" placeholder="Cidade" /></div>
+            <div class="field"><label>Estado *</label><input id="f-state" placeholder="SP" maxlength="2" /></div>
+          </div>
+          <div style="padding:12px 0;font-size:13px;color:#666;">
+            O boleto sera gerado e podera ser pago em qualquer banco ou app bancario.
+          </div>`;
+      }
+    }
+
+    function mountCardForm() {
+      if (!mp) return;
+      const total = getCartTotal();
+
+      cardForm = mp.cardForm({
+        amount: String(total),
+        iframe: true,
+        form: {
+          id: 'card-form',
+          cardNumber: { id: 'cardNumber', placeholder: '0000 0000 0000 0000' },
+          expirationDate: { id: 'expirationDate', placeholder: 'MM/AA' },
+          securityCode: { id: 'securityCode', placeholder: '123' },
+          cardholderName: { id: 'f-card-name', placeholder: 'Como aparece no cartao' },
+          installments: { id: 'f-installments' },
+          identificationType: { id: 'f-doc-type' },
+          identificationNumber: { id: 'f-cpf' },
+        },
+        callbacks: {
+          onFormMounted: (error) => {
+            if (error) console.warn('CardForm mount error:', error);
+          },
+          onFormUnmounted: (error) => {
+            if (error) console.warn('CardForm unmount error:', error);
+          },
+          onPaymentMethodsReceived: (error, data) => {
+            if (data && data[0]) {
+              const hidden = document.getElementById('paymentMethodId');
+              if (hidden) hidden.value = data[0].id;
+            }
+          },
+        },
+      });
+    }
+
+    function setPayMethod(method) {
+      paymentMethod = method;
+      document.querySelectorAll('.pay-tab').forEach(tab => {
+        const text = tab.textContent.trim().toLowerCase();
+        const isActive =
+          (method === 'pix' && text === 'pix') ||
+          (method === 'credit_card' && text === 'cartao') ||
+          (method === 'boleto' && text === 'boleto');
+        tab.className = 'pay-tab' + (isActive ? ' active' : '');
+      });
+      renderPayForm();
+    }
+
+    // =============================================
+    // PAYMENT HANDLER
+    // =============================================
+    async function handlePay() {
+      if (processing) return;
+
+      const errorEl = document.getElementById('checkout-error');
+      const resultEl = document.getElementById('checkout-result');
+      const btn = document.getElementById('btn-pay');
+      errorEl.style.display = 'none';
+      resultEl.style.display = 'none';
+
+      const firstName = document.getElementById('f-first-name')?.value?.trim();
+      const lastName = document.getElementById('f-last-name')?.value?.trim();
+      const email = document.getElementById('f-email')?.value?.trim();
+      const cpf = document.getElementById('f-cpf')?.value?.trim().replace(/\D/g, '');
+
+      if (!firstName || !lastName) { showError('Preencha nome e sobrenome.'); return; }
+      if (!email || !email.includes('@')) { showError('Preencha um e-mail valido.'); return; }
+      if (!cpf || cpf.length < 11) { showError('Preencha um CPF valido.'); return; }
+
+      let payment_method = {};
+
+      if (paymentMethod === 'pix') {
+        payment_method = { id: 'pix', type: 'bank_transfer' };
+      } else if (paymentMethod === 'boleto') {
+        payment_method = { id: 'boleto', type: 'ticket' };
+      } else if (paymentMethod === 'credit_card') {
+        // Tokenize card via MercadoPago Secure Fields
+        if (!cardForm) { showError('Formulario de cartao nao carregou. Recarregue a pagina.'); return; }
+
+        try {
+          const cardFormData = cardForm.getCardFormData();
+          if (!cardFormData.token) {
+            // Try to create token
+            const tokenResult = await cardForm.createCardToken();
+            if (!tokenResult || !tokenResult.id) {
+              showError('Erro ao tokenizar cartao. Verifique os dados.');
+              return;
+            }
+            cardFormData.token = tokenResult.id;
+            cardFormData.paymentMethodId = tokenResult.payment_method_id || document.getElementById('paymentMethodId')?.value;
+          }
+
+          payment_method = {
+            id: cardFormData.paymentMethodId || document.getElementById('paymentMethodId')?.value || 'master',
+            type: 'credit_card',
+            token: cardFormData.token,
+            installments: parseInt(document.getElementById('f-installments')?.value || '1'),
+          };
+        } catch (err) {
+          console.error('Card tokenization error:', err);
+          showError('Erro ao processar cartao: ' + (err.message || JSON.stringify(err)));
+          return;
+        }
+      }
+
+      const payer = {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        identification: { type: 'CPF', number: cpf },
+      };
+
+      if (paymentMethod === 'boleto') {
+        const street = document.getElementById('f-street')?.value?.trim();
+        const zip = document.getElementById('f-zip')?.value?.trim().replace(/\D/g, '');
+        const city = document.getElementById('f-city')?.value?.trim();
+        const state = document.getElementById('f-state')?.value?.trim().toUpperCase();
+        if (!street || !zip || !city || !state) { showError('Preencha o endereco completo para boleto.'); return; }
+        payer.address = { street_name: street, street_number: '0', zip_code: zip, neighborhood: '', city: city, state: state };
+      }
+
+      processing = true;
+      btn.disabled = true;
+      btn.textContent = 'Processando...';
+
+      try {
+        const cart = getCart();
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: cart, payer, payment_method }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao processar pagamento');
+
+        if (data.status === 'approved') {
+          clearCart();
+          resultEl.innerHTML = `<div class="msg-success"><h3 style="margin-bottom:8px;">Pagamento aprovado!</h3><p>Pedido #${data.orderId} confirmado.</p><p style="margin-top:12px;"><a href="/loja.html" style="color:#16a34a;">Continuar comprando</a></p></div>`;
+          resultEl.style.display = 'block';
+          btn.style.display = 'none';
+        } else if (data.pix) {
+          clearCart();
+          resultEl.innerHTML = `<div class="card pix-result"><h3 style="margin-bottom:8px;">Pague com Pix</h3><p style="font-size:13px;color:#666;margin-bottom:12px;">Pedido #${data.orderId}</p>${data.pix.qr_code_base64 ? `<img src="data:image/png;base64,${data.pix.qr_code_base64}" alt="QR Code Pix" />` : ''}${data.pix.qr_code ? `<div class="pix-code" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado!';setTimeout(()=>this.textContent=this.dataset.code,2000)" data-code="${data.pix.qr_code}" title="Clique para copiar">${data.pix.qr_code}</div>` : ''}${data.pix.ticket_url ? `<a href="${data.pix.ticket_url}" target="_blank" style="color:#2563eb;font-size:13px;">Abrir pagina de pagamento</a>` : ''}</div>`;
+          resultEl.style.display = 'block';
+          btn.style.display = 'none';
+        } else if (data.boleto) {
+          clearCart();
+          resultEl.innerHTML = `<div class="card"><h3 style="margin-bottom:8px;">Boleto gerado</h3><p style="font-size:13px;color:#666;margin-bottom:12px;">Pedido #${data.orderId}</p>${data.boleto.digitable_line ? `<div class="field"><label>Linha digitavel</label><div class="pix-code" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado!';setTimeout(()=>this.textContent=this.dataset.code,2000)" data-code="${data.boleto.digitable_line}" title="Clique para copiar">${data.boleto.digitable_line}</div></div>` : ''}${data.boleto.ticket_url ? `<a href="${data.boleto.ticket_url}" target="_blank" class="btn-primary" style="display:block;text-align:center;text-decoration:none;margin-top:12px;">Abrir boleto</a>` : ''}</div>`;
+          resultEl.style.display = 'block';
+          btn.style.display = 'none';
+        } else {
+          resultEl.innerHTML = `<div class="msg-success"><h3 style="margin-bottom:8px;">Pedido recebido</h3><p>Pedido #${data.orderId} — Status: ${data.statusDetail || data.status}</p><p style="margin-top:12px;"><a href="/loja.html" style="color:#16a34a;">Continuar comprando</a></p></div>`;
+          resultEl.style.display = 'block';
+        }
+      } catch (err) {
+        showError(err.message || 'Erro ao processar pagamento.');
+      } finally {
+        processing = false;
+        btn.disabled = false;
+        if (btn.style.display !== 'none') btn.textContent = 'Pagar ' + formatBRL(getCartTotal());
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('checkout-error');
+      if (el) { el.textContent = msg; el.style.display = 'block'; }
+    }
+
+    // =============================================
+    // INIT
+    // =============================================
+    document.addEventListener('DOMContentLoaded', renderCheckout);
+  </script>
+</body>
+</html>

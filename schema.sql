@@ -1,0 +1,1 @@
+-- Schema canonical source is now iwo-vercel/prisma/schema.prisma. See Prisma migrations.

@@ -1,0 +1,220 @@
+/* app/conta/(protected)/pedidos/_components/OrderList.module.css
+   Scoped styles for the customer order list page. Uses CSS Modules — no
+   external UI lib. Desktop shows a table with hover rows; mobile (<=720px)
+   stacks each order as a standalone card. */
+
+.wrap {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  color: #1a1a1a;
+}
+
+.title {
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  margin: 0 0 24px;
+}
+
+.empty {
+  background: #f7f7f8;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.emptyText {
+  margin: 0 0 16px;
+  color: #666;
+  font-size: 15px;
+}
+
+.emptyCta {
+  display: inline-block;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.emptyCta:hover {
+  background: #1a1a1a;
+}
+
+.tableWrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table thead {
+  background: #f7f7f8;
+}
+
+.table th {
+  text-align: left;
+  font-weight: 600;
+  color: #666;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f1f3;
+  vertical-align: middle;
+  color: #1a1a1a;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #fafafb;
+}
+
+.orderId {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.date {
+  color: #666;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.total {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.thumbs {
+  display: inline-flex;
+  align-items: center;
+}
+
+.thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f7f7f8;
+  border: 1px solid #e5e7eb;
+  margin-left: -8px;
+  display: inline-block;
+}
+
+.thumb:first-child {
+  margin-left: 0;
+}
+
+.thumbMore {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -8px;
+  border: 1px solid #1a1a1a;
+}
+
+.detailLink {
+  color: #1a1a1a;
+  text-decoration: underline;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.detailLink:hover {
+  color: #000;
+}
+
+/* Mobile — stack rows as cards */
+@media (max-width: 720px) {
+  .wrap {
+    padding: 20px 16px 48px;
+  }
+
+  .title {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .tableWrap {
+    border: none;
+    background: transparent;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .table td {
+    border: none;
+    padding: 4px 0;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #666;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .table tbody tr:hover {
+    background: #fff;
+  }
+
+  .mobileRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-top: 8px;
+  }
+}
