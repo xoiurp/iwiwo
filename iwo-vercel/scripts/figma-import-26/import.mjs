@@ -106,17 +106,20 @@ async function main() {
   // `width/height/flex-shrink` into the existing `style=""` attribute on
   // the opening root tag. Inline style survives CSS scoping and beats any
   // class-based size rule.
-  const FRAME_WIDTH = VARIANT === 'mobile' ? 375 : 1280;
-  // NOTE: height varies per Figma frame. 4698 is the desktop frame height;
-  // 3000 is a safe placeholder for the first mobile import — refine to the
-  // actual Figma frame height after the first MCP get_metadata call.
-  const FRAME_HEIGHT = VARIANT === 'mobile' ? 3000 : 4698;
+  const FRAME_WIDTH = VARIANT === 'mobile' ? 390 : 1280;
+  // Heights captured via `mcp__plugin_figma_figma__get_metadata` on each
+  // variant's root node. Update when the Figma frame intrinsic height
+  // changes (common during design iteration).
+  const FRAME_HEIGHT = VARIANT === 'mobile' ? 3789 : 4698;
 
-  htmlRaw = htmlRaw.replace(
-    /^<div class="relative size-full" style="([^"]*)"/,
-    (_m, existing) =>
-      `<div class="relative size-full" style="${existing};width:${FRAME_WIDTH}px;height:${FRAME_HEIGHT}px;flex-shrink:0"`,
-  );
+  // Wrap the Figma HTML in an outer pin div with the frame's intrinsic
+  // size. Needed because the Figma export uses `size-full` on its root —
+  // a 100%×100% declaration that collapses to 0 without a sized parent.
+  // Wrapping is more robust than the previous inline-style injection
+  // regex: that approach only matched a specific root signature
+  // (`<div class="relative size-full" style="...">`) and silently failed
+  // on mobile frames whose roots use different class combinations.
+  htmlRaw = `<div style="width:${FRAME_WIDTH}px;height:${FRAME_HEIGHT}px;flex-shrink:0">${htmlRaw}</div>`;
 
   // Strip `whitespace-nowrap` ONLY from the immediate wrapper `<div>` of
   // placeholders that can hold long dynamic text. Figma sizes each text
