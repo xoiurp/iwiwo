@@ -1,0 +1,26 @@
+/* Overrides pro SiteHeader portado do Webflow. */
+
+/* Logo: desktop mostra a versão extendida; mobile mostra só o ícone centralizado */
+.iwo-logo-desktop { display: block; }
+.iwo-logo-mobile { display: none; }
+
+@media (max-width: 991px) {
+  .iwo-logo-desktop { display: none; }
+  .iwo-logo-mobile {
+    display: block;
+    margin: 0 auto;
+    height: 28px;
+    width: auto;
+  }
+  /* O Webflow usa navbar21_logo-link com display:flex/flex-start; em
+     mobile queremos o ícone centralizado horizontalmente na barra. */
+  .navbar21_logo-link {
+    margin: 0 auto;
+  }
+}
+
+/* Quando o menu hamburguer abre em mobile, o backdrop fica branco
+   (Webflow default era transparente/herdado — dificulta leitura). */
+.navbar21_menu.w--open {
+  background: #fff !important;
+}

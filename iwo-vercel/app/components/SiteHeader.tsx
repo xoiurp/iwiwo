@@ -15,6 +15,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import './site-header.css';
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -34,7 +35,13 @@ export function SiteHeader() {
           <img
             src="/images/iwo_cinza_extended-1-p-500.webp"
             alt="IWO Watch"
+            className="iwo-logo-desktop"
             style={{ height: 28, width: 'auto', display: 'block', maxWidth: 'none' }}
+          />
+          <img
+            src="/images/Logo-Icone-Cinza.svg"
+            alt="IWO Watch"
+            className="iwo-logo-mobile"
           />
         </Link>
         <div className="menu-wrapper-copy">
