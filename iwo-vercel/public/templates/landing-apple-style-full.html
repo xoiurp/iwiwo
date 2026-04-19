@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1280" />
+    <title>IWO Watch — Landing Page</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        color: #1a1b1f;
+        font-family: "Inter", "Sofia Pro", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      body {
+        background: #faf8fe;
+      }
+
+      /* --- Html → Body: 1280px wide canvas with the Apple-style gradient ---- */
+      .html-body {
+        position: relative;
+        width: 1280px;
+        height: 4666px;
+        margin: 0 auto;
+        background-image:
+          linear-gradient(90deg, rgb(250, 248, 254) 0%, rgb(250, 248, 254) 100%),
+          linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%);
+        overflow: hidden;
+      }
+
+      /* --- Main frame (Figma coordinate system: top 128, 1280 x 4538) ------ */
+      .main {
+        position: absolute;
+        top: 128px;
+        left: 0;
+        width: 1280px;
+        height: 4538px;
+      }
+
+      /* ------------------------------------------------------------------
+         HERO (top: 128, height: 921)
+         ------------------------------------------------------------------ */
+      .hero {
+        position: absolute;
+        top: 128px;
+        left: 0;
+        right: 0;
+        height: 921px;
+      }
+
+      .hero-text {
+        position: absolute;
+        top: 0;
+        left: 256px;
+        width: 768px;
+      }
+
+      .hero-title {
+        margin: 0;
+        padding-top: 47px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 72px;
+        line-height: 72px;
+        letter-spacing: -1.8px;
+        white-space: nowrap;
+      }
+
+      .hero-title .muted {
+        display: block;
+        color: #5f5e60;
+      }
+
+      .hero-desc {
+        position: absolute;
+        top: 382px;
+        left: 0;
+        right: 0;
+        margin: 0;
+        text-align: center;
+        font-weight: 400;
+        font-size: 18px;
+        line-height: 28px;
+        color: #414753;
+        white-space: nowrap;
+      }
+
+      .hero-ctas {
+        position: absolute;
+        top: 485px;
+        left: 170px;
+        right: 170px;
+        display: flex;
+        gap: 18px;
+        justify-content: center;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 28px;
+        border-radius: 9999px;
+        font-weight: 500;
+        font-size: 16px;
+        line-height: 24px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .btn-primary {
+        background: #0076df;
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 8px 30px 0 rgba(0, 118, 223, 0.12);
+      }
+
+      .btn-primary:hover {
+        box-shadow: 0 10px 36px 0 rgba(0, 118, 223, 0.18);
+      }
+
+      .btn-outline {
+        background: transparent;
+        color: #005db3;
+        border: 0.5px solid #06c;
+      }
+
+      .btn-outline:hover {
+        background: rgba(0, 102, 204, 0.04);
+      }
+
+      .btn-outline .icon-heart {
+        width: 9px;
+        height: 10px;
+      }
+
+      .hero-image-wrapper {
+        position: absolute;
+        top: 307px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1232px;
+        height: 614px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .hero-image {
+        width: 337px;
+        height: 488px;
+        object-fit: cover;
+      }
+
+      /* ------------------------------------------------------------------
+         SECTION — Feature 1: Integrated Compass (top: 1039, height: 493)
+         ------------------------------------------------------------------ */
+      .section-compass {
+        position: absolute;
+        top: 1039px;
+        left: 10px;
+        right: 10px;
+        height: 483px;
+        background: #f4f3f8;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        overflow: hidden;
+      }
+
+      .section-compass .content {
+        position: absolute;
+        top: 131px;
+        left: 64px;
+        right: 64px;
+        display: flex;
+        align-items: center;
+        gap: 40px;
+      }
+
+      .compass-image {
+        width: 300px;
+        height: 345px;
+        object-fit: contain;
+        margin-left: 114px;
+      }
+
+      .feature-text {
+        flex: 1;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: #005db3;
+      }
+
+      .eyebrow .icon {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
+      }
+
+      .feature-heading {
+        margin: 20px 0 0;
+        font-weight: 700;
+        font-size: 48px;
+        line-height: 48px;
+        letter-spacing: -1.2px;
+        color: #1a1b1f;
+      }
+
+      .feature-desc {
+        margin: 24px 0 0;
+        font-weight: 400;
+        font-size: 18px;
+        line-height: 28px;
+        color: #414753;
+      }
+
+      /* ------------------------------------------------------------------
+         SECTION — Feature 2: Infinite Edge Display (top: 1522, height: 735)
+         ------------------------------------------------------------------ */
+      .section-display {
+        position: absolute;
+        top: 1522px;
+        left: 0;
+        right: 0;
+        height: 735px;
+      }
+
+      .section-display .content {
+        position: absolute;
+        top: 128px;
+        left: 64px;
+        right: 64px;
+        display: flex;
+        align-items: center;
+        gap: 40px;
+      }
+
+      .section-display .feature-text {
+        padding-left: 48px;
+        flex: 1;
+      }
+
+      .display-card {
+        position: relative;
+        width: 590px;
+        height: 479px;
+        border-radius: 48px;
+        background: #faf8fe;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .display-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          42deg,
+          rgb(233, 231, 237) 0%,
+          rgba(233, 231, 237, 0) 100%
+        );
+        opacity: 0.5;
+      }
+
+      .display-image {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 276px;
+        height: 447px;
+        object-fit: cover;
+      }
+
+      /* ------------------------------------------------------------------
+         CARDS (top: 2257, height: 608)
+         ------------------------------------------------------------------ */
+      .cards {
+        position: absolute;
+        top: 2257px;
+        left: 0;
+        right: 0;
+        height: 608px;
+      }
+
+      .card {
+        position: absolute;
+        top: 0;
+        height: 608px;
+        overflow: hidden;
+      }
+
+      .card-ultra {
+        left: 0;
+        width: 695px;
+        background: #f2f3f9;
+      }
+
+      .card-series {
+        top: -10px;
+        left: 695px;
+        width: 585px;
+        margin-left: 10px;
+        height: 608px;
+        margin-top: 10px;
+        background: #000000;
+      }
+
+      .card-header {
+        position: absolute;
+        top: 56px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 251px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        z-index: 2;
+      }
+
+      .card-title {
+        margin: 0;
+        font-family: "Sofia Pro", "Inter", sans-serif;
+        font-weight: 400;
+        font-size: 18px;
+        letter-spacing: -0.36px;
+      }
+
+      .card-title.dark {
+        color: #000000;
+      }
+
+      .card-title.light {
+        color: #ffffff;
+      }
+
+      .card-links {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .card-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "Sofia Pro", "Inter", sans-serif;
+        font-weight: 400;
+        font-size: 18px;
+        line-height: 18px;
+        letter-spacing: -0.36px;
+        text-decoration: none;
+      }
+
+      .card-link.dark {
+        color: #06c;
+      }
+
+      .card-link.light {
+        color: #ffffff;
+      }
+
+      .card-link .chevron {
+        width: 5px;
+        height: 11px;
+      }
+
+      .card-image {
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .card-ultra .card-image {
+        bottom: 0;
+        left: 0;
+        width: 695px;
+        height: 326px;
+        object-fit: cover;
+      }
+
+      .card-series .card-image {
+        top: 265px;
+        left: 50px;
+        right: 49px;
+        width: calc(100% - 99px);
+        aspect-ratio: 688 / 486;
+        object-fit: cover;
+      }
+
+      /* ------------------------------------------------------------------
+         SECTION — Feature 3: Advanced Health Tracking (top: 2865, height: 940)
+         ------------------------------------------------------------------ */
+      .section-health {
+        position: absolute;
+        top: 2865px;
+        left: 0;
+        right: 0;
+        height: 940px;
+        background: #e9e7ed;
+      }
+
+      .section-health .content {
+        position: absolute;
+        top: 128px;
+        left: 64px;
+        right: 64px;
+      }
+
+      .section-health .feature-text {
+        text-align: center;
+        width: 668px;
+        margin: 0 auto;
+      }
+
+      .section-health .eyebrow {
+        display: inline-flex;
+      }
+
+      .section-health .feature-heading {
+        text-align: center;
+      }
+
+      .section-health .feature-desc {
+        text-align: center;
+      }
+
+      .health-card {
+        position: relative;
+        margin: 64px 128px 0;
+        border-radius: 48px;
+        border: 1px solid rgba(193, 198, 213, 0.1);
+        background: #ffffff;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        aspect-ratio: 16 / 9;
+      }
+
+      .health-image {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.9;
+      }
+
+      .heart-overlay {
+        position: absolute;
+        bottom: 138px;
+        left: 63px;
+        width: 268.88px;
+        height: 86px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(193, 198, 213, 0.2);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        gap: 16px;
+      }
+
+      .heart-overlay .heart-icon {
+        width: 23.75px;
+        height: 21.47px;
+        flex-shrink: 0;
+      }
+
+      .heart-overlay .heart-text {
+        flex: 1;
+      }
+
+      .heart-overlay .heart-label {
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 20px;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        color: #5f5e60;
+        margin: 0;
+      }
+
+      .heart-overlay .heart-value {
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 32px;
+        color: #1a1b1f;
+        margin: 0;
+      }
+
+      .heart-overlay .heart-value .unit {
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 20px;
+        color: #5f5e60;
+        margin-left: 4px;
+      }
+
+      /* ------------------------------------------------------------------
+         iPhone 14 Pro hero (top: 3805, height: 776.841)
+         ------------------------------------------------------------------ */
+      .section-iphone {
+        position: absolute;
+        top: 3805px;
+        left: 0;
+        right: 0;
+        height: 777px;
+        background: #e9e7ed;
+        overflow: hidden;
+      }
+
+      .iphone-details {
+        position: absolute;
+        top: 128px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 421px;
+        height: 130px;
+        text-align: center;
+      }
+
+      .iphone-title {
+        margin: 0;
+        font-family: "Sofia Pro", "Inter", sans-serif;
+        font-weight: 500;
+        color: #000000;
+      }
+
+      .iphone-title .primary {
+        display: block;
+        font-size: 56px;
+        line-height: 56px;
+        letter-spacing: -1.12px;
+      }
+
+      .iphone-title .secondary {
+        display: block;
+        font-size: 26px;
+        line-height: 30px;
+        letter-spacing: -0.52px;
+        margin-top: 4px;
+      }
+
+      .iphone-links {
+        margin-top: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+      }
+
+      .iphone-links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "Sofia Pro", "Inter", sans-serif;
+        font-weight: 500;
+        font-size: 20px;
+        line-height: 20px;
+        letter-spacing: -0.4px;
+        color: #2997ff;
+        text-decoration: none;
+      }
+
+      .iphone-links a .chevron {
+        width: 5px;
+        height: 11px;
+      }
+
+      .iphone-hero-image {
+        position: absolute;
+        top: 258px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 672px;
+        height: 519px;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="html-body">
+      <main class="main">
+        <!-- ================= HERO ================= -->
+        <section class="hero">
+          <div class="hero-text">
+            <h1 class="hero-title">
+              {Nome do Produto}
+              <span class="muted">{Subtítulo do produto}</span>
+            </h1>
+            <p class="hero-desc">{Descrição curta do produto}</p>
+            <div class="hero-ctas">
+              <a class="btn btn-primary" href="#comprar">Comprar Agora</a>
+              <a class="btn btn-outline" href="#carrinho">
+                <svg
+                  class="icon-heart"
+                  viewBox="0 0 9 10"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4.42 9.5S.5 6.76.5 3.85C.5 2.27 1.7 1 3.17 1c.83 0 1.57.4 2.06 1.02C5.72 1.4 6.46 1 7.29 1 8.77 1 9.97 2.27 9.97 3.85 9.97 6.76 6.04 9.5 6.04 9.5h-1.62z"
+                    stroke="#005db3"
+                    stroke-width="0.8"
+                  />
+                </svg>
+                Adicionar ao Carrinho
+              </a>
+            </div>
+          </div>
+          <div class="hero-image-wrapper">
+            <img
+              class="hero-image"
+              src="https://www.figma.com/api/mcp/asset/b3944c12-03fc-4c11-9d44-983977a094b0"
+              alt="IWO Watch"
+            />
+          </div>
+        </section>
+
+        <!-- ========== FEATURE 1 — Bússola Integrada ========== -->
+        <section class="section-compass">
+          <div class="content">
+            <img
+              class="compass-image"
+              src="https://www.figma.com/api/mcp/asset/949083d7-2fa0-4813-bc1f-b412fafca1c5"
+              alt=""
+            />
+            <div class="feature-text">
+              <div class="eyebrow">
+                <svg
+                  class="icon"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="6"
+                    cy="6"
+                    r="5"
+                    stroke="#005db3"
+                    stroke-width="1"
+                  />
+                  <path d="M6 3.5L7 6 6 8.5 5 6Z" fill="#005db3" />
+                </svg>
+                ORIENTAÇÃO
+              </div>
+              <h2 class="feature-heading">Bússola<br />Integrada.</h2>
+              <p class="feature-desc">
+                Encontre seu norte com uma precisão sem precedentes. O sensor
+                magnético integrado é calibrado para a perfeição absoluta,
+                fornecendo dados em tempo real sobre um mostrador minimalista
+                de alto contraste.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== FEATURE 2 — Tela de Borda Infinita ========== -->
+        <section class="section-display">
+          <div class="content">
+            <div class="feature-text">
+              <div class="eyebrow">
+                <svg
+                  class="icon"
+                  viewBox="0 0 11 11"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="1"
+                    y="1"
+                    width="9"
+                    height="9"
+                    rx="2"
+                    stroke="#005db3"
+                    stroke-width="1"
+                  />
+                </svg>
+                TELA
+              </div>
+              <h2 class="feature-heading">Tela de Borda<br />Infinita.</h2>
+              <p class="feature-desc">
+                Eliminamos a moldura para criar uma tela que se funde com as
+                bordas. O cristal de safira curvo proporciona uma experiência
+                de toque fluida, tornando cada interação sem esforço.
+              </p>
+            </div>
+            <div class="display-card">
+              <img
+                class="display-image"
+                src="https://www.figma.com/api/mcp/asset/0b9737e6-7d46-4706-b71f-81a8b50cc16c"
+                alt=""
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= CARDS ================= -->
+        <section class="cards">
+          <article class="card card-ultra">
+            <div class="card-header">
+              <p class="card-title dark">Características</p>
+              <div class="card-links">
+                <a class="card-link dark" href="#">
+                  Saiba mais
+                  <svg
+                    class="chevron"
+                    viewBox="0 0 5 11"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M1 1l3 4.5-3 4.5"
+                      stroke="#06c"
+                      stroke-width="1"
+                      fill="none"
+                    />
+                  </svg>
+                </a>
+                <a class="card-link dark" href="#">
+                  Saiba mais
+                  <svg
+                    class="chevron"
+                    viewBox="0 0 5 11"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M1 1l3 4.5-3 4.5"
+                      stroke="#06c"
+                      stroke-width="1"
+                      fill="none"
+                    />
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <img
+              class="card-image"
+              src="https://www.figma.com/api/mcp/asset/ba3f24e9-378b-4807-8386-c9b435a058f1"
+              alt=""
+            />
+          </article>
+
+          <article class="card card-series">
+            <div class="card-header">
+              <p class="card-title light">Características</p>
+              <div class="card-links">
+                <a class="card-link light" href="#">
+                  Saiba mais
+                  <svg
+                    class="chevron"
+                    viewBox="0 0 5 11"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M1 1l3 4.5-3 4.5"
+                      stroke="#ffffff"
+                      stroke-width="1"
+                      fill="none"
+                    />
+                  </svg>
+                </a>
+                <a class="card-link light" href="#">
+                  Saiba mais
+                  <svg
+                    class="chevron"
+                    viewBox="0 0 5 11"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M1 1l3 4.5-3 4.5"
+                      stroke="#ffffff"
+                      stroke-width="1"
+                      fill="none"
+                    />
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <img
+              class="card-image"
+              src="https://www.figma.com/api/mcp/asset/2a68bb94-d084-4f9c-bc18-8829a797bb04"
+              alt=""
+            />
+          </article>
+        </section>
+
+        <!-- ========== FEATURE 3 — Acompanhamento de Saúde ========== -->
+        <section class="section-health">
+          <div class="content">
+            <div class="feature-text">
+              <div class="eyebrow">
+                <svg
+                  class="icon"
+                  viewBox="0 0 12 10"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M1 4h2l1.5-3L7 8l1.5-4H11"
+                    stroke="#005db3"
+                    stroke-width="1"
+                    fill="none"
+                  />
+                </svg>
+                BEM-ESTAR
+              </div>
+              <h2 class="feature-heading">
+                Acompanhamento Avançado<br />de Saúde.
+              </h2>
+              <p class="feature-desc">
+                Monitoramento vital contínuo integrado perfeitamente ao seu
+                dia. A óptica de precisão lê o oxigênio no sangue, a frequência
+                cardíaca e as métricas de sono com precisão de nível clínico.
+              </p>
+            </div>
+
+            <div class="health-card">
+              <img
+                class="health-image"
+                src="https://www.figma.com/api/mcp/asset/ce3d35db-c78e-4ff8-a074-67c31a3d6e13"
+                alt=""
+              />
+              <div class="heart-overlay">
+                <svg
+                  class="heart-icon"
+                  viewBox="0 0 24 22"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 20.5S2 13.5 2 7.5C2 4.5 4.5 2 7.5 2 9.3 2 10.9 3 12 4.3 13.1 3 14.7 2 16.5 2 19.5 2 22 4.5 22 7.5c0 6-10 13-10 13z"
+                    fill="#ff3b30"
+                  />
+                </svg>
+                <div class="heart-text">
+                  <p class="heart-label">FREQUÊNCIA CARDÍACA</p>
+                  <p class="heart-value">68<span class="unit">bpm</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== iPhone 14 Pro Hero (Iwo Smart Watch) ========== -->
+        <section class="section-iphone">
+          <div class="iphone-details">
+            <h2 class="iphone-title">
+              <span class="primary">Iwo Smart Watch</span>
+              <span class="secondary">Pro. Além.</span>
+            </h2>
+            <div class="iphone-links">
+              <a href="#saiba-mais">
+                Saiba mais
+                <svg
+                  class="chevron"
+                  viewBox="0 0 5 11"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M1 1l3 4.5-3 4.5"
+                    stroke="#2997ff"
+                    stroke-width="1"
+                    fill="none"
+                  />
+                </svg>
+              </a>
+              <a href="#pre-venda">
+                Pré-venda
+                <svg
+                  class="chevron"
+                  viewBox="0 0 5 11"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M1 1l3 4.5-3 4.5"
+                    stroke="#2997ff"
+                    stroke-width="1"
+                    fill="none"
+                  />
+                </svg>
+              </a>
+            </div>
+          </div>
+          <img
+            class="iphone-hero-image"
+            src="https://www.figma.com/api/mcp/asset/b3ba4431-4b5a-4a0c-a038-f4f7efcd684c"
+            alt="Iwo Smart Watch Pro"
+          />
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,393 @@
+Informações do pedido
+
+# Informações do pedido
+
+## Objetivo
+
+Esta API permite que você recupere informações detalhadas sobre uma etiqueta de frete específica, utilizando o ID único da etiqueta gerado previamente pela API de Envio de Frete. Ao fazer uma requisição para este endpoint, a API retornará um objeto JSON contendo todos os detalhes associados àquela etiqueta.
+
+O objeto JSON retornado contém os seguintes campos:
+
+`id`: (String) O ID único da etiqueta de frete gerada pela SuperFrete. Este é o identificador principal da etiqueta.
+
+`protocol`: (String) Um identificador de protocolo interno da SuperFrete, geralmente idêntico ao id.
+
+`format`: (String) O formato da embalagem utilizado (ex: "box").
+
+`delivery`: (Integer) O prazo de entrega em dias úteis informado no momento do cálculo do frete.
+
+`delivery_min`: (Integer) O prazo mínimo de entrega em dias úteis informado no momento do cálculo do frete.
+
+`delivery_max`: (Integer) O prazo máximo de entrega em dias úteis informado no momento do cálculo do frete.
+
+`discount`: (Float) O valor do desconto aplicado ao frete, se houver (ex: 7.43).
+
+`height`: (String) A altura da embalagem em centímetros (ex: "15").
+
+`width`: (String) A largura da embalagem em centímetros (ex: "25").
+
+`length`: (String) O comprimento da embalagem em centímetros (ex: "26").
+
+`weight`: (String) O peso da embalagem em quilogramas (ex: "2.20").
+
+`from`: (Objeto) Detalhes do remetente:
+
+* `address`: (String) Endereço do remetente.
+* `city`: (String) Cidade do remetente.
+* `complement`: (String) Complemento do endereço do remetente.
+* `email`: (String) E-mail do remetente.
+* `district`: (String) Bairro do remetente.
+* `document`: (String) Documento do remetente (CPF/CNPJ).
+* `name`: (String) Nome completo do remetente.
+* `location_number`: (String) Número do endereço do remetente.
+* `postal_code`: (String) CEP do remetente.
+* `state_abbr`: (String) Código do estado (UF) do remetente.
+* `country_id`: (String) Código do país do remetente (sempre "BR" para Brasil).
+
+`to`: (Objeto) Detalhes do destinatário:
+
+* `address`: (String) Endereço do destinatário.
+* `city`: (String) Cidade do destinatário.
+* `complement`: (String) Complemento do endereço do destinatário.
+* `district`: (String) Bairro do destinatário.
+* `document`: (String) Documento do destinatário (CPF/CNPJ).
+* `name`: (String) Nome completo do destinatário.
+* `location_number`: (String) Número do endereço do destinatário.
+* `postal_code`: (String) CEP do destinatário.
+* `state_abbr`: (String) Código do estado (UF) do destinatário.
+* `country_id`: (String) Código do país do destinatário (sempre "BR" para Brasil).
+
+`invoice`: (Objeto ou null) Detalhes da nota fiscal, se utilizada. Será null caso uma declaração de conteúdo seja utilizada.
+
+`own_hand`: (Boolean) Indica se o serviço de Mão Própria foi solicitado (true) ou não (false).
+
+`receipt`: (Boolean) Indica se o serviço de Aviso de Recebimento foi solicitado (true) ou não (false).
+
+`price`: (Float) O valor total do frete (ex: 27.37).
+
+`tracking`: (String ou null) O código de rastreamento da encomenda. Este campo só será preenchido após a etiqueta ser paga e o status mudar para **released** (aguardando postagem) ou posterior (ex: "AA923452383BR"). Será null se a etiqueta ainda não foi paga ou liberada.
+
+`status`: (String) O status atual da etiqueta (ex: "delivered"). Os possíveis status incluem: pending, released, posted, delivered, canceled.
+
+`service_id`: (Integer) O código do serviço de entrega utilizado (1 para PAC, 2 para SEDEX, 17 para Mini Envios).
+
+`products`: (Array de Objetos) Lista dos produtos declarados para a encomenda (declaração de conteúdo):
+
+* `name`: (String) Nome do produto.
+* `quantity`: (String) Quantidade do produto.
+* `unitary_value`: (String) Valor unitário do produto.
+
+`insurance_value`: (Float ou null) O valor declarado do seguro da encomenda, se aplicável. Será null se nenhum seguro foi contratado.
+
+`generated_at`: (String) Timestamp (em formato ISO 8601 UTC) da data e hora em que a etiqueta foi gerada.
+
+`posted_at`: (String ou null) Timestamp (em formato ISO 8601 UTC) da data e hora em que a encomenda foi postada. Será null até a postagem ser registrada.
+
+`created_at`: (String) Timestamp (em formato ISO 8601 UTC) da data e hora em que o pedido da etiqueta foi criado.
+
+`updated_at`: (String) Timestamp (em formato ISO 8601 UTC) da última vez em que as informações da etiqueta foram atualizadas.
+
+`print`: (Objeto) Informações para impressão da etiqueta:
+
+* `url`: (String) URL para acessar o arquivo PDF da etiqueta para impressão.
+
+`tags`: (Array de Objetos) Lista de tags associadas à etiqueta, geralmente contendo informações de identificação do pedido na plataforma de origem:
+
+* `tag`: (String) O valor da tag (ex: "3101481").
+* `url`: (String) A URL associada à tag na plataforma de origem
+
+# OpenAPI definition
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Integration",
+    "version": "0"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.superfrete.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sec0": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-bearer-format": "bearer",
+        "x-default": ""
+      }
+    }
+  },
+  "security": [
+    {
+      "sec0": []
+    }
+  ],
+  "paths": {
+    "/api/v0/order/info/{id}": {
+      "get": {
+        "summary": "Informações do pedido",
+        "description": "",
+        "operationId": "tag-informações-do-pedido",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Id do pedido SuperFrete",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{\n  \"id\": \"JlmCKlsK7G471C4ChJYX\",\n  \"format\": \"box\",\n  \"delivery\": 5,\n  \"delivery_min\": 5,\n  \"delivery_max\": 5,\n  \"discount\": 5.01,\n  \"height\": 2,\n  \"width\": 11,\n  \"length\": 16,\n  \"weight\": 0.3,\n  \"from\": {\n    \"address\": \"Rua do remetente\",\n    \"city\": \"Cidade\",\n    \"complement\": null,\n    \"district\": \"Bairro\",\n    \"document\": null,\n    \"name\": \"Nome do remetente\",\n    \"location_number\": \"S/N\",\n    \"postal_code\": \"20020050\",\n    \"state_abbr\": \"RJ\",\n    \"country_id\": \"BR\"\n  },\n  \"to\": {\n    \"address\": \"Rua do destinatário\",\n    \"city\": \"Cidade\",\n    \"complement\": null,\n    \"district\": \"Bairro\",\n    \"document\": null,\n    \"name\": \"Nome do destinatário\",\n    \"location_number\": \"S/N\",\n    \"postal_code\": \"01153000\",\n    \"state_abbr\": \"SP\",\n    \"country_id\": \"BR\"\n  },\n  \"invoice\": \"123456\",\n  \"own_hand\": false,\n  \"receipt\": false,\n  \"price\": 19.79,\n  \"tracking\": \"EC451638075BR\",\n  \"status\": \"pending\",\n  \"service_id\": 1,\n  \"products\": [\n    {\n      \"name\": \"Produto 1\",\n      \"quantity\": \"1\",\n      \"unitary_value\": \"100\"\n    },\n    {\n      \"name\": \"Produto 2\",\n      \"quantity\": \"2\",\n      \"unitary_value\": \"200\"\n    }\n  ],\n  \"insurance_value\": null,\n  \"generated_at\": \"2022-12-03T17:36:01.159Z\",\n  \"posted_at\": \"2022-12-03T17:36:01.159Z\",\n  \"created_at\": \"2022-12-03T17:34:39.399Z\",\n  \"updated_at\": \"2022-12-03T17:36:04.481Z\"\n}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "JlmCKlsK7G471C4ChJYX"
+                    },
+                    "format": {
+                      "type": "string",
+                      "example": "box"
+                    },
+                    "delivery": {
+                      "type": "integer",
+                      "example": 5,
+                      "default": 0
+                    },
+                    "delivery_min": {
+                      "type": "integer",
+                      "example": 5,
+                      "default": 0
+                    },
+                    "delivery_max": {
+                      "type": "integer",
+                      "example": 5,
+                      "default": 0
+                    },
+                    "discount": {
+                      "type": "number",
+                      "example": 5.01,
+                      "default": 0
+                    },
+                    "height": {
+                      "type": "integer",
+                      "example": 2,
+                      "default": 0
+                    },
+                    "width": {
+                      "type": "integer",
+                      "example": 11,
+                      "default": 0
+                    },
+                    "length": {
+                      "type": "integer",
+                      "example": 16,
+                      "default": 0
+                    },
+                    "weight": {
+                      "type": "number",
+                      "example": 0.3,
+                      "default": 0
+                    },
+                    "from": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string",
+                          "example": "Rua do remetente"
+                        },
+                        "city": {
+                          "type": "string",
+                          "example": "Cidade"
+                        },
+                        "complement": {},
+                        "district": {
+                          "type": "string",
+                          "example": "Bairro"
+                        },
+                        "document": {},
+                        "name": {
+                          "type": "string",
+                          "example": "Nome do remetente"
+                        },
+                        "location_number": {
+                          "type": "string",
+                          "example": "S/N"
+                        },
+                        "postal_code": {
+                          "type": "string",
+                          "example": "20020050"
+                        },
+                        "state_abbr": {
+                          "type": "string",
+                          "example": "RJ"
+                        },
+                        "country_id": {
+                          "type": "string",
+                          "example": "BR"
+                        }
+                      }
+                    },
+                    "to": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string",
+                          "example": "Rua do destinatário"
+                        },
+                        "city": {
+                          "type": "string",
+                          "example": "Cidade"
+                        },
+                        "complement": {},
+                        "district": {
+                          "type": "string",
+                          "example": "Bairro"
+                        },
+                        "document": {},
+                        "name": {
+                          "type": "string",
+                          "example": "Nome do destinatário"
+                        },
+                        "location_number": {
+                          "type": "string",
+                          "example": "S/N"
+                        },
+                        "postal_code": {
+                          "type": "string",
+                          "example": "01153000"
+                        },
+                        "state_abbr": {
+                          "type": "string",
+                          "example": "SP"
+                        },
+                        "country_id": {
+                          "type": "string",
+                          "example": "BR"
+                        }
+                      }
+                    },
+                    "invoice": {
+                      "type": "string",
+                      "example": "123456"
+                    },
+                    "own_hand": {
+                      "type": "boolean",
+                      "example": false,
+                      "default": true
+                    },
+                    "receipt": {
+                      "type": "boolean",
+                      "example": false,
+                      "default": true
+                    },
+                    "price": {
+                      "type": "number",
+                      "example": 19.79,
+                      "default": 0
+                    },
+                    "tracking": {
+                      "type": "string",
+                      "example": "EC451638075BR"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "pending"
+                    },
+                    "service_id": {
+                      "type": "integer",
+                      "example": 1,
+                      "default": 0
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "example": "Produto 1"
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "example": "1"
+                          },
+                          "unitary_value": {
+                            "type": "string",
+                            "example": "100"
+                          }
+                        }
+                      }
+                    },
+                    "insurance_value": {},
+                    "generated_at": {
+                      "type": "string",
+                      "example": "2022-12-03T17:36:01.159Z"
+                    },
+                    "posted_at": {
+                      "type": "string",
+                      "example": "2022-12-03T17:36:01.159Z"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "example": "2022-12-03T17:34:39.399Z"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "example": "2022-12-03T17:36:04.481Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "x-readme": {
+    "headers": [
+      {
+        "key": "User-Agent",
+        "value": "Nome e versão da aplicação (email para contato técnico)"
+      }
+    ],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true,
+  "_id": "63879ecb146a930035ba9f95:6389015e2e268b0079ea3121"
+}
+```

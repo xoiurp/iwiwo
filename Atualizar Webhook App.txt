@@ -1,0 +1,228 @@
+Atualizar Webhook App
+
+# Atualizar Webhook App
+
+## Objetivo
+
+Este endpoint permite atualizar as informações de um Webhook App já cadastrado, como a URL de recebimento ou os eventos que serão monitorados.
+
+Apenas os campos enviados na requisição serão atualizados.
+
+***
+
+### Como atualizar um Webhook App
+
+Para atualizar um Webhook App, envie uma requisição conforme abaixo.
+
+Método HTTP\
+`PUT`
+
+URL Sandbox\
+<https://sandbox.superfrete.com/api/v0/webhook/{id}>
+
+URL Produção\
+<https://api.superfrete.com/api/v0/webhook/{id}>
+
+***
+
+### O que este endpoint retorna
+
+A resposta retorna os dados atualizados do Webhook App, incluindo identificador, URL configurada e eventos associados.
+
+![](https://files.readme.io/87d65c41b141676f9e6cd38f255ce86c3662d34daa89e36a64751f6ed4f2a9fc-image.png)
+
+***
+
+### Eventos disponíveis
+
+Abaixo estão os eventos que podem ser configurados no Webhook App:
+
+**Disponíveis**
+
+`order.posted`\
+Disparado quando o pedido é postado nos Correios.
+
+`order.delivered`\
+Disparado quando o pedido é entregue ao cliente final.
+
+`order.created`\
+Disparado quando o pedido é criado.
+
+`order.released`\
+Disparado quando o pedido é pago.
+
+`order.generated`\
+Disparado quando a etiqueta do pedido é gerada.
+
+`order.cancelled
+`Disparado quando o pedido é cancelado.
+
+# OpenAPI definition
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Integration",
+    "version": "0"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.superfrete.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sec0": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-bearer-format": "bearer",
+        "x-default": ""
+      }
+    }
+  },
+  "security": [
+    {
+      "sec0": []
+    }
+  ],
+  "paths": {
+    "/api/v0/webhook": {
+      "put": {
+        "summary": "Atualizar Webhook App",
+        "description": "",
+        "operationId": "atualizar-webhook-app",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identificador do Webhook App a ser atualizado",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Novo nome do Webhook App"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Nova URL para receber as notificações"
+                  },
+                  "events": {
+                    "type": "array",
+                    "description": "Nova lista de eventos",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "is_active": {
+                    "type": "boolean",
+                    "description": "Ativar ou desativar o webhook"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{\n  \"id\": \"webhook-app-123\",\n  \"name\": \"Webhook Atualizado\",\n  \"url\": \"https://meusite.com/novo-webhook\",\n  \"events\": [\"order.created\"],\n  \"is_active\": false,\n  \"updated_at\": \"2023-10-10T09:00:00Z\"\n}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "webhook-app-123"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Webhook Atualizado"
+                    },
+                    "url": {
+                      "type": "string",
+                      "example": "https://meusite.com/novo-webhook"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "order.created"
+                      }
+                    },
+                    "is_active": {
+                      "type": "boolean",
+                      "example": false,
+                      "default": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "example": "2023-10-10T09:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "x-readme": {
+          "code-samples": [
+            {
+              "language": "text",
+              "code": "{\n  \"name\": \"Webhook Atualizado\",\n  \"url\": \"https://meusite.com/novo-webhook\",\n  \"events\": [\"order.created\"],\n  \"is_active\": false\n}"
+            }
+          ],
+          "samples-languages": [
+            "text"
+          ]
+        }
+      }
+    }
+  },
+  "x-readme": {
+    "headers": [
+      {
+        "key": "User-Agent",
+        "value": "Nome e versão da aplicação (email para contato técnico)"
+      }
+    ],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true,
+  "_id": "63879ecb146a930035ba9f95:6733b5ebc1a0da001122eca6"
+}
+```

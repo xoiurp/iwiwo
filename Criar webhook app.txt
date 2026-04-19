@@ -1,0 +1,214 @@
+Criar webhook app
+
+# Criar webhook app
+
+## Objetivo
+
+Este endpoint cadastra um webhook que receberá notificações de eventos da SuperFrete, como pedidos gerados ou etiquetas emitidas.
+
+Ao criar o webhook, você deve informar a URL que receberá as notificações e, opcionalmente, quais eventos deseja acompanhar..
+
+***
+
+### Como criar um webhook
+
+Para cadastrar um webhook, envie uma requisição conforme as informações abaixo.
+
+Método HTTP\
+`POST`
+
+URL Sandbox (Testes)\
+<https://sandbox.superfrete.com/api/v0/webhook>
+
+URL Produção (Ambiente real)\
+<https://api.superfrete.com/api/v0/webhook>
+
+***
+
+### O que acontece após a criação
+
+Depois que o webhook for cadastrado, sempre que um dos eventos configurados ocorrer, a SuperFrete enviará uma requisição HTTP POST para a URL informada, contendo os dados do evento em formato JSON.
+
+***
+
+### Campos de resposta
+
+A resposta deste endpoint retorna as informações do webhook criado, como identificador, URL configurada e eventos associados.
+
+![](https://files.readme.io/d5ef1d2d843705065a65699efc1ae8872c70d3997a6134d8f9b7ac1c68b13f12-image.png)
+
+<br />
+
+## Eventos disponíveis
+
+Abaixo está a lista de eventos que podem ser enviados para o webhook:
+
+`order.created`\
+Disparado quando o pedido é criado.
+
+`order.released`\
+Disparado quando o pedido é pago.
+
+`order.generated`\
+Disparado quando a etiqueta do pedido é gerada.
+
+`order.posted`\
+Disparado quando o pedido é postado.
+
+`order.delivered`\
+Disparado quando o pedido é entregue ao cliente final.
+
+`order.cancelled
+`Disparado quando o pedido é cancelado.
+
+# OpenAPI definition
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Integration",
+    "version": "0"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.superfrete.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sec0": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-bearer-format": "bearer",
+        "x-default": ""
+      }
+    }
+  },
+  "security": [
+    {
+      "sec0": []
+    }
+  ],
+  "paths": {
+    "/api/v0/webhook": {
+      "post": {
+        "summary": "Criar webhook app",
+        "description": "",
+        "operationId": "criar-webhook-app",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "url"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Nome do Webhook app"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "URL que receberá as notificações"
+                  },
+                  "events": {
+                    "type": "array",
+                    "description": "Lista de eventos para receber as atualizações",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{\n  \"id\": \"webhook-app-123\",\n  \"name\": \"Meu Webhook App\",\n  \"url\": \"https://meusite.com/webhook\",\n  \"secret_token\": \"abc123def456\",\n  \"events\": [\"order.posted\", \"order.delivered\"],\n  \"is_active\": true,\n  \"created_at\": \"2023-10-01T12:00:00Z\"\n}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "webhook-app-123"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Meu Webhook App"
+                    },
+                    "url": {
+                      "type": "string",
+                      "example": "https://meusite.com/webhook"
+                    },
+                    "secret_token": {
+                      "type": "string",
+                      "example": "abc123def456"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "order.posted"
+                      }
+                    },
+                    "is_active": {
+                      "type": "boolean",
+                      "example": true,
+                      "default": true
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "example": "2023-10-01T12:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "x-readme": {
+    "headers": [
+      {
+        "key": "User-Agent",
+        "value": "Nome e versão da aplicação (email para contato técnico)"
+      }
+    ],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true,
+  "_id": "63879ecb146a930035ba9f95:6733b3867bd0940053312537"
+}
+```

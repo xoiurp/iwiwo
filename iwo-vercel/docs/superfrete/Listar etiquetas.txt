@@ -1,0 +1,193 @@
+Listar etiquetas
+
+# Listar etiquetas
+
+## Objetivo
+
+Este endpoint permite listar os envios/pedidos do usuário autenticado, com filtros (ex: status), paginação, ordenação. Garantindo assim que o usuário tenha visibilidade e controle de todos os envios/pedidos com a SuperFrete.
+
+> 🚧 Pré-requisito:
+>
+> Para utilizar este endpoint, é necessário informar o e-mail cadastrado na SuperFrete.
+
+<br />
+
+## Utilização do endpoint
+
+Para realizar a consulta, será necessário possuir o token do ambiente devidamenete configurado e preencher o *Header* com a informado de *User-agent*.
+
+Na sequência, basta realizar a requisição no formato *GET* e o retorno será apresentando.
+
+O retorno deverá trazer a listagem de todas as etiquetas que existem na conta consultada com base no status - se aplicado. Caso a consulta seja feita sem nenhum filtro, serão apresentados todas as etiquetas considerando todos os status, apresentando um total de 20 etiquetas por página.
+
+## Uso dos critérios *sort\_by* e *order*
+
+* Sort\_by: Este, não sendo um filtro, serve como parâmetro de ordenamento dos valores retornados. Neste momento, é possível ordenas por data de criação e ou de última atualização.
+* Order: Este, não sendo um filtro, serve como parâmetro de ordenamento dos valores retornados. Se aplicado sozinho, ou seja, sem associação com o *sort\_by*, ordena as etiquetas, do mais novo ao mais antigo ou o inverso - Ou seja, utiliza a data da criação da etiqueta. Quando associado ao *sort\_by*, terá como referência a data estabelecida nesse parâmetro para realizar o ordenamento.
+
+## Resposta da API
+
+Ao fim da listagem, deverá conter os dados de volume total de etiquetas na conta, volume de etiquetas exibido por página, página atual exibida e número da última página.
+
+Os campos retornados para a identificação de cada etiqueta listada são:
+
+* Identificação da etiqueta *(ID)*;
+* Status;
+* Transportadora;
+* Rastreio/*Tracking;*
+* Preço do frete
+  * Valor do balcão da transportadora; Valor do desconto Superfrete; Valor com desconto.
+* Prazo de entrega;
+  * Praxo mínimo e máximo (se houver).
+* Dados do remetente:
+  * Nome; Telefone; Documento; CEP; Endereço; Número; Complemento; Estado (UF); Cidade; Bairro.
+* Dados do destinatário:
+  * Nome; Telefone; E-mail; Documento; CEP; Endereço; Número; Complemento; Estado (UF); Cidade; Bairro.
+* Dados do ponto de postagem (se aplicável):
+  * Nome do ponto; CEP; Endereço; Número; Complemento; Estado (UF); Cidade; Bairro.
+* Data de criação da etiqueta;
+* Data da última atualização da etiqueta.
+
+# OpenAPI definition
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Integration",
+    "version": "0"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.superfrete.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sec0": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-bearer-format": "bearer",
+        "x-default": ""
+      }
+    }
+  },
+  "security": [
+    {
+      "sec0": []
+    }
+  ],
+  "paths": {
+    "/api/v0/me/orders": {
+      "get": {
+        "summary": "Listar etiquetas",
+        "description": "",
+        "operationId": "listar-etiquetas-na-superfrete",
+        "parameters": [
+          {
+            "name": "User-agent",
+            "in": "header",
+            "description": "Identificação de e-mail SuperFrete do usuário.",
+            "schema": {
+              "type": "string",
+              "default": "Aplicação (listaretiquetas@superfrete.com)"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status da etiqueta a ser filtrado. Sem ele, haverá retorno de todos os pedidos sem distinção.",
+            "schema": {
+              "type": "string",
+              "default": "pending; released; posted; delivered; canceled."
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Nº da página a ser consultado dentro da listagem total.",
+            "schema": {
+              "type": "string",
+              "default": "1,2,3..."
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Nº de resultados por página a ser exibido dentro da listagem total.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Ordenamento das etiquetas, do mais novo ao mais antigo ou o inverso. Sozinho, será listado pelo critério do data da criação da etiqueta; Quando associado a outro critério, terá como referência a data do outro critério para realizar o ordenamento.",
+            "schema": {
+              "type": "string",
+              "default": "asc/desc."
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Critério de ordenamento a ser aplicado na listagem.",
+            "schema": {
+              "type": "string",
+              "default": "created_at; updated_at."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "x-readme": {
+    "headers": [
+      {
+        "key": "User-Agent",
+        "value": "Nome e versão da aplicação (email para contato técnico)"
+      }
+    ],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true,
+  "_id": "63879ecb146a930035ba9f95:69b1d1257118bc0fdd2b6954"
+}
+```

@@ -1,0 +1,130 @@
+Deletar Webhook app
+
+# Deletar Webhook app
+
+## Objetivo
+
+Este endpoint remove um Webhook App cadastrado na conta do usuário autenticado.
+
+Após a remoção, o webhook deixa de receber notificações de eventos da SuperFrete.
+
+***
+
+### Como remover um Webhook App
+
+Para remover um Webhook App, envie uma requisição conforme abaixo.
+
+Método HTTP\
+`DELETE`
+
+URL Sandbox\
+<https://sandbox.superfrete.com/api/v0/webhook/{id}>
+
+URL Produção\
+<https://api.superfrete.com/api/v0/webhook/{id}>
+
+<br />
+
+> 🚧 Importante
+>
+> A remoção é definitiva e não poderá ser desfeita.
+
+# OpenAPI definition
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Integration",
+    "version": "0"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.superfrete.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sec0": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-bearer-format": "bearer",
+        "x-default": ""
+      }
+    }
+  },
+  "security": [
+    {
+      "sec0": []
+    }
+  ],
+  "paths": {
+    "/api/v0/webhook/{id}": {
+      "delete": {
+        "summary": "Deletar Webhook app",
+        "description": "",
+        "operationId": "deletar-webhook-app",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identificador do Webhook App a ser deletado",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "204",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "x-readme": {
+    "headers": [
+      {
+        "key": "User-Agent",
+        "value": "Nome e versão da aplicação (email para contato técnico)"
+      }
+    ],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true,
+  "_id": "63879ecb146a930035ba9f95:6733b674fa1727002fd9021d"
+}
+```

@@ -1,0 +1,478 @@
+Enviar frete para a SuperFrete
+
+# Enviar frete para a SuperFrete
+
+Qualquer dúvida enviar para integracao@superfrete.com
+
+## Objetivo
+
+Este endpoint permite enviar os detalhes de um pedido para a SuperFrete e gerar uma etiqueta de frete. Ao enviar as informações, uma etiqueta será criada com o status de "aguardando pagamento" (pending).
+
+**Para emitir a etiqueta, o cliente tem as seguintes opções:**
+
+[Pagamento via Painel SuperFrete](https://web.superfrete.com/#/minhas-etiquetas): O pagamento pode ser realizado diretamente no painel da SuperFrete, utilizando cartão de crédito ou saldo em conta.
+
+[Pagamento via API](https://superfrete.readme.io/reference/apiintegrationv1checkout) (com saldo em conta): Utilize o endpoint de finalização de pedido para pagar a etiqueta diretamente através da API, descontando o valor do seu saldo na SuperFrete.
+
+`from` (obrigatório): adicionar todas as informações do remetente.
+
+* `name` (obrigatório) - nome: precisa ter nome e sobrenome do remetente.
+  * Caso o nome da loja tenha apenas 1 nome exemplo SuperFrete adicionar Loja antes para a API aceitar.
+* `address` (obrigatório) - endereço. Rua do remetente.
+* `complement` (opcional) - complemento: adicionar o complemento do remetente.
+* `number` (opcional) - número: adicionar o número do remetente. Caso não tenha enviar uma string vazia. Exemplo: number: ""
+* `district` (obrigatório) - bairro: enviar o bairro do destinatário. Caso não tenha enviar "NA".
+* `city` (obrigatório) - cidade: enviar a cidade do destinatário.
+* `state_abbr` (obrigatório) - código do estado: enviar o código do estado. Ex: SP. Ambas as letras precisam estar em caixa alta. sp não será aceito.
+* `postal_code` (obrigatório) - CEP: enviar o CEP do remetente.
+* `document`(opcional) - documento: enviar o CPF ou CNPJ. Caso não seja enviado será utilizado para Loggi e Jadlog o CPF ou CNPJ vinculado a conta.
+
+<br />
+
+`to` (required): adicionar todas as informações do destinatário.
+
+* `name` (obrigatório) - nome: precisa ter nome e sobrenome do destinatário.
+* `address` (obrigatório) - endereço. Rua do destinatário.
+* `complement` (opcional) - complemento: adicionar o complemento do destinatário.
+* `number` (opcional) - número: adicionar o número do destinatário. Caso não tenha enviar uma string vazia. Exemplo: number: ""
+* `district` (obrigatório) - bairro: enviar o bairro do destinatário. Caso não tenha enviar "NA".
+* `city` (obrigatório) - cidade: enviar a cidade do destinatário.
+* `state_abbr` (obrigatório) - código do estado: enviar o código do estado. Ex: SP. Ambas as letras precisam estar em caixa alta. sp não será aceito.
+* `postal_code` (obrigatório) - CEP: enviar o CEP do destinatário.
+* `email` (opcional) - e-mail do destinatário para envio do código de rastreio.
+* `document` (obrigatório) - documento: é obrigatório o envio do CPF ou CNPJ do destinatário para todas as transportadoras para garantia da emisão de DC-e - se aplicável.
+
+<br />
+
+`service` (obrigatório): qual modalidade de envio será utilizada, sendo: 1 (PAC), 2 (SEDEX), 17 (Mini Envios), 3 (Jadlog), 31 (Loggi).
+
+<br />
+
+`products` - declaração de conteúdo: caso queira usar a declaração de conteúdo é necessário enviar o campo non\_comercial como true. Caso queira usar nota fiscal o campo non\_comercial deve ser enviado como nulo ou não enviado.
+
+**Importante**: até o momento para Jadlog ou Loggi só será aceito declaração de conteúdo.
+
+* `name` - nome: nome do produto.
+* `quantity` - quantidade: a quantidade do produto que será enviado no pacote.
+* `unitary_value` - valor unitário: valor unitário de cada produto.
+
+<br />
+
+`volume` (obrigatório): enviar as dimensões e peso do pacote que foi retornado pela API do cálculo do frete.
+
+* `height` (obrigatório) - altura
+* `width` (obrigatório) - largura
+* `length` (obrigatório) - comprimento
+* `weight` (obrigatório) - peso
+
+> 📘 Como pegar as dimensões do volume?
+>
+> Fazer uma requisição na API de cálculo do frete com os produtos do carrinho.
+>
+> Ex: 2 produtos com as dimensões de altura 2 cm, largura 16 cm, comprimento 20 cm e peso 2kg.
+>
+> Pegar as informações do package que retornou na resposta da API de cálculo.
+>
+> A cubagem do cálculo retornou na API as dimensões de peso 4kg, altura 6 cm, largura 16 cm, comprimento 24 cm. Ou seja, essas dimensões e peso devem ser usadas.
+>
+> height (obrigatório) - altura\
+> width (obrigatório) - largura\
+> length (obrigatório) - comprimento\
+> weight (obrigatório) - peso
+
+<br />
+
+`options` (object) (opcional): nesse objeto deverá ser enviado quais serviços opcionais que devem ser considerados no frete. Caso nada seja enviado todos são considerados como falso.
+
+* `insurance_value` - valor do seguro: enviar o valor da encomenda (sem o frete) caso queira que adicione seguro no valor da encomenda. Caso contrário enviar como nulo (null).
+* `receipt` - confirmação de recebimento: adicionar para receber uma confirmação do recebimento da encomenda pelo destinatário.
+* `own_hand` - mão própria: adicionar para garantir que o destinatário que deve receber a encomenda.
+* `non_commercial` - não comercial: enviar como falso (FALSE) ou não enviar o parâmetro caso queira utilizar **nota fiscal** no lugar de **declaração de conteúdo**. Caso queira usar **declaração de conteúdo** enviar como **TRUE**.
+
+> 🚧 Importante:
+>
+> Para Jadlog (service 3) ou Loggi (service 31) até o momento só será aceito declaração de conteúdo.
+
+* `invoice` - nota fiscal: enviar o frete sem a declaração de conteúdo apenas com a nota fiscal. OBS: ainda será necessário imprimir e adicionar a nota fiscal ao pacote.
+  * `number` (obrigatório) - número: número da nota fiscal de 44 dígitos
+  * `key` (opcional): identificador da nota fiscal
+
+`tag`: identificação do pedido na plataforma\
+`url`: adicionar a URL da plataforma\
+`platform`: adicionar o nome da plataforma
+
+<br />
+
+**Veja abaixo cada um dos status que a etiqueta pode ficar**:
+
+**pending** = Aguardando emissão (pagamento).\
+**released** = Aguardando postagem.\
+**posted** = Postado.\
+**delivered** = Entregue.\
+**cancelled** = Cancelado.
+
+<br />
+
+> 📘 Código de rastreio
+>
+> O código de rastreio da etiqueta só fica disponível a partir do momento que ela está no **status released.** Para conseguir essa informação enviar o id da etiqueta gerada na [API Informações da etiquet](https://superfrete.readme.io/reference/tag-informa%C3%A7%C3%B5es-do-pedido)a que aparecerá o campo tracking com a informação.
+
+# OpenAPI definition
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Integration",
+    "version": "0"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.superfrete.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sec0": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-bearer-format": "bearer",
+        "x-default": ""
+      }
+    }
+  },
+  "security": [
+    {
+      "sec0": []
+    }
+  ],
+  "paths": {
+    "/api/v0/cart": {
+      "post": {
+        "summary": "Enviar frete para a SuperFrete",
+        "description": "Qualquer dúvida enviar para integracao@superfrete.com",
+        "operationId": "adicionar-frete-carrinho",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to",
+                  "service",
+                  "volumes"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "object",
+                    "description": "Dados do remetente",
+                    "required": [
+                      "name",
+                      "address",
+                      "district",
+                      "city",
+                      "state_abbr",
+                      "postal_code"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "address": {
+                        "type": "string"
+                      },
+                      "complement": {
+                        "type": "string"
+                      },
+                      "number": {
+                        "type": "string"
+                      },
+                      "district": {
+                        "type": "string"
+                      },
+                      "city": {
+                        "type": "string"
+                      },
+                      "state_abbr": {
+                        "type": "string"
+                      },
+                      "postal_code": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "to": {
+                    "type": "object",
+                    "description": "Dados do destinatário",
+                    "required": [
+                      "name",
+                      "address",
+                      "district",
+                      "city",
+                      "state_abbr",
+                      "postal_code"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "address": {
+                        "type": "string"
+                      },
+                      "complement": {
+                        "type": "string"
+                      },
+                      "number": {
+                        "type": "string"
+                      },
+                      "district": {
+                        "type": "string"
+                      },
+                      "city": {
+                        "type": "string"
+                      },
+                      "state_abbr": {
+                        "type": "string"
+                      },
+                      "postal_code": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string",
+                        "description": "Email para envio de atualização de rastreio"
+                      },
+                      "document": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "service": {
+                    "type": "integer",
+                    "description": "Serviço escolhido pelo cliente. 1: PAC, 2: SEDEX, 17: Mini Envios (Ex: \"service\": \"1,2,17\")",
+                    "format": "int32"
+                  },
+                  "products": {
+                    "type": "array",
+                    "description": "Produtos para a criação da declaração de conteúdo.",
+                    "items": {
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "quantity": {
+                          "type": "string"
+                        },
+                        "unitary_value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "volumes": {
+                    "type": "object",
+                    "description": "Mesmo pacote enviado na hora de calcular o frete.",
+                    "required": [
+                      "height",
+                      "width",
+                      "length",
+                      "weight"
+                    ],
+                    "properties": {
+                      "height": {
+                        "type": "number",
+                        "format": "float"
+                      },
+                      "width": {
+                        "type": "number",
+                        "format": "float"
+                      },
+                      "length": {
+                        "type": "number",
+                        "format": "float"
+                      },
+                      "weight": {
+                        "type": "number",
+                        "format": "float"
+                      }
+                    }
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "insurance_value": {
+                        "type": "number",
+                        "format": "float"
+                      },
+                      "receipt": {
+                        "type": "boolean"
+                      },
+                      "own_hand": {
+                        "type": "boolean"
+                      },
+                      "non_commercial": {
+                        "type": "boolean",
+                        "description": "Indicação de declaração de conteúdo (Atenção: Se não for passado ou for false, Nota Fiscal se torna obrigatória)"
+                      },
+                      "invoice": {
+                        "type": "object",
+                        "required": [
+                          "number"
+                        ],
+                        "properties": {
+                          "number": {
+                            "type": "string",
+                            "description": "Atenção: Obrigatório, mesmo com valor vazio."
+                          },
+                          "key": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "properties": {
+                            "tag": {
+                              "type": "string",
+                              "description": "Identificação do pedido na plataforma"
+                            },
+                            "url": {
+                              "type": "string",
+                              "description": "Url da plataforma"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      }
+                    }
+                  },
+                  "platform": {
+                    "type": "string",
+                    "description": "Insira aqui o nome da sua plataforma",
+                    "default": "Documentação"
+                  }
+                }
+              },
+              "examples": {
+                "Request": {
+                  "value": {
+                    "from": {
+                      "name": "Nome do remetente",
+                      "address": "Rua do remetente",
+                      "district": "Bairro",
+                      "state_abbr": "RJ",
+                      "postal_code": "20020050",
+                      "city": "Cidade"
+                    },
+                    "to": {
+                      "name": "Nome do destinatário",
+                      "address": "Rua do destinatário",
+                      "district": "Bairro",
+                      "city": "Cidade",
+                      "state_abbr": "SP",
+                      "postal_code": "01153000",
+                      "email": "email@mail.com"
+                    },
+                    "service": 1,
+                    "products": [
+                      {
+                        "name": "Produto 1",
+                        "quantity": 1,
+                        "unitary_value": 100
+                      },
+                      {
+                        "name": "Produto 2",
+                        "quantity": 2,
+                        "unitary_value": 200
+                      }
+                    ],
+                    "volumes": {
+                      "height": 2,
+                      "width": 11,
+                      "length": 16,
+                      "weight": 0.3
+                    },
+                    "options": {
+                      "invoice": {
+                        "key": "123456"
+                      }
+                    },
+                    "platform": "Insira aqui o nome da sua plataforma"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{\n   \"id\":\"r8p3dhqjn4I0tBpnvkpU\",\n   \"price\":34.27,\n   \"status\":\"pending\"\n}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "r8p3dhqjn4I0tBpnvkpU"
+                    },
+                    "price": {
+                      "type": "number",
+                      "example": 34.27,
+                      "default": 0
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "pending"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "x-readme": {
+    "headers": [
+      {
+        "key": "User-Agent",
+        "value": "Nome e versão da aplicação (email para contato técnico)"
+      }
+    ],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true,
+  "_id": "63879ecb146a930035ba9f95:6388e391df422a0d7443749a"
+}
+```

@@ -1,0 +1,114 @@
+Webhook
+
+# Webhook
+
+A nossa integração via WebHooks permite que os usuários configurem, listem, atualizem e removam “webhooks apps” para receber notificações sobre eventos específicos em tempo real. Os webhooks são chamados quando determinados eventos ocorrem, enviando uma payload para a URL configurada
+
+<br />
+
+## Autenticação
+
+Todos os endpoints desta API requerem autenticação. A autenticação é feita através de um token JWT (JSON Web Token) enviado no cabeçalho da requisição.
+
+Cabeçalho de Autorização:
+
+Authorization: Bearer {token}
+
+**Como obter o token:**
+
+O token pode ser obtido através do processo de criar um token de integração no painel da SuperFrete e deve ser incluído em todas as requisições autenticadas.
+
+Criar token em [produção](https://web.superfrete.com/#/integrations)
+
+Criar token em [Sandbox](https://sandbox.superfrete.com/#/integrations)
+
+<br />
+
+## Eventos
+
+Veja abaixo a lista de eventos e quais já foram disponibilizados e quais serão disponibilizados:
+
+**Disponível**
+
+order.created: disparado quando o pedido é criado
+
+order.released: disparado quando o pedido é pago
+
+order.generated: disparado quando a etiqueta do pedido é gerada
+
+order.posted: disparado quando o pedido é postado
+
+order.delivered: disparado quando o pedido é entregue no destino
+
+order.cancelled: disparado quando o pedido é cancelado
+
+<br />
+
+## Exemplo de resposta da requisição
+
+* O `tracking` e `tracking_url` só ficará disponível a partir do `order.generated`
+
+```
+{
+  "event": "order.delivered",
+  "data": {
+    "protocol":null,
+    "id": "[id]",
+    "status": "delivered",
+    "tracking": "[tracking]",
+    "self_tracking":null,
+    "user_id": "[uid]",
+    "tags": [
+      {
+        "tag": "tag1",
+        "url": "www.url1.com"
+      }
+    ],
+        "created_at": "2024-03-29T23:49:26+00:00",
+        "paid_at": "2024-03-29T23:50:47+00:00",
+        "generated_at": "2024-03-29T23:51:47+00:00",
+        "posted_at": "2024-03-29T23:55:00+00:00",
+        "delivered_at": "2024-03-29T23:57:47+00:00",
+        "canceled_at": null,
+        "expired_at": null,
+        “tracking_url”: "rastreio.superfrete.com/#/tracking/[tracking_id]"
+  }
+}
+```
+
+<br />
+
+## Notas gerais
+
+* **Política de Reenvio:**
+
+Caso o envio da notificação falhe ou não haja resposta após um timeout de 30 segundos, o sistema realizará novas tentativas de envio após um intervalo de 15 minutos.
+
+Serão feitas até 5 tentativas antes de descartar a notificação.
+
+* **Validação da URL:**
+
+A URL fornecida ao criar ou atualizar um Webhook App deve ser válida e acessível e do tipo POST.
+
+URLs inválidas ou que não respondem podem causar falhas nas notificações.
+
+* **Segurança e Assinatura:**
+
+Todas as notificações enviadas para os webhooks incluem um cabeçalho X-ME-Signature contendo uma assinatura HMAC-SHA256 gerada usando o corpo da requisição e o secret\_token fornecido na criação do Webhook App.
+
+O destinatário deve validar esta assinatura para garantir a integridade e autenticidade da notificação
+
+* **Processo para Validação da Assinatura X-ME-Signature**
+  * Etapas:
+    * **Receber o Webhook:** Quando o seu serviço recebe um webhook, o payload da requisição deve ser capturado para verificação.
+    * **Recuperar o Secret Token:** Este é o mesmo token fornecido quando o Webhook App foi criado. É importante que ele seja mantido em segredo no lado do cliente.
+    * **Gerar uma Assinatura Local**: Utilize o secret\_token e o conteúdo do corpo da requisição (payload) para gerar a assinatura localmente com o mesmo algoritmo HMAC-SHA256 que foi utilizado no webhook original.
+    * **Comparar a Assinatura Local com a Assinatura Recebida:** Compare a assinatura gerada localmente com a assinatura recebida no cabeçalho X-ME-Signature. Se ambas forem iguais, a requisição é válida e não foi alterada.
+
+<br />
+
+**Observações Importantes:**
+
+* **Integridade do Payload:** O payload da requisição deve ser passado exatamente como foi recebido. Qualquer alteração, mesmo que mínima, pode invalidar a assinatura.
+* **Manter o Secret Token Seguro:** O secret\_token é uma chave secreta e deve ser mantido seguro no servidor. Nunca o exponha publicamente.
+* **Verifique o Secret Token:** A implementação com HMAC e o algoritmo SHA-256 garante que a assinatura só pode ser gerada corretamente se a chave secreta correta (gerada na criação do webhook\_app) for usada.

@@ -1,0 +1,140 @@
+Link para impressão da etiqueta
+
+# Link para impressão da etiqueta
+
+## Objetivo
+
+Este endpoint retorna a URL da etiqueta em formato PDF com base nos `IDs` de pedidos informados na requisição.
+
+**Se você preferir baixar a etiqueta no formato A6, basta ativar essa opção na sua conta SuperFrete:**
+
+1. Acesse a SuperFrete.
+2. Vá até o menu [Etiquetas](https://web.superfrete.com/#/minhas-etiquetas).
+3. Clique em **Configurações**.
+4. Ative a opção **A6 (Zebra)**.
+5. Após ativar, todas as etiquetas geradas serão enviadas automaticamente nesse formato.
+
+![](https://files.readme.io/4cac4eb1294769f024cf45b2b9ee66a469cd4fc39866fb865c17a1a59a944a0e-image.png)
+
+***
+
+**Corpo da requisição**
+
+```
+{
+  "orders": [
+    "01JK6D99A7SVYXV03C3ZFS7CXA"
+  ]
+}
+```
+
+# OpenAPI definition
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Integration",
+    "version": "0"
+  },
+  "servers": [
+    {
+      "url": "https://sandbox.superfrete.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sec0": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "x-bearer-format": "bearer",
+        "x-default": ""
+      }
+    }
+  },
+  "security": [
+    {
+      "sec0": []
+    }
+  ],
+  "paths": {
+    "/api/v0/tag/print": {
+      "post": {
+        "summary": "Link para impressão da etiqueta",
+        "description": "",
+        "operationId": "tag-link",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orders": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{\n  \"url\": \"https://sandbox.superfrete.com/_etiqueta/pdf/eyJvcmRlcl9pZCI6IjA2bXlaNWFjcE9KeWpMT1A4bWNMIiwidWlkIjoiTTJ0RFMwZHhlbXhRUm1aRFJXb3lXREZVYTI5aU1EZFRUakpOTWc9PSJ9\"\n}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "example": "https://sandbox.superfrete.com/_etiqueta/pdf/eyJvcmRlcl9pZCI6IjA2bXlaNWFjcE9KeWpMT1A4bWNMIiwidWlkIjoiTTJ0RFMwZHhlbXhRUm1aRFJXb3lXREZVYTI5aU1EZFRUakpOTWc9PSJ9"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "x-readme": {
+    "headers": [
+      {
+        "key": "User-Agent",
+        "value": "Nome e versão da aplicação (email para contato técnico)"
+      }
+    ],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true,
+  "_id": "63879ecb146a930035ba9f95:638a0d3a9110980095bbc9cb"
+}
+```
