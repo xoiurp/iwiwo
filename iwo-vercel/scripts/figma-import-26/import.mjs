@@ -37,12 +37,26 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '../..');
 dotenv.config({ path: join(projectRoot, '.env.local'), override: false });
 
+// Parse --variant=<desktop|mobile> from argv (default: desktop).
+function parseVariant() {
+  const match = process.argv.find((a) => a.startsWith('--variant'));
+  if (!match) return 'desktop';
+  const value = match.includes('=')
+    ? match.split('=')[1]
+    : process.argv[process.argv.indexOf(match) + 1];
+  if (value !== 'desktop' && value !== 'mobile') {
+    throw new Error(`Invalid --variant "${value}". Use desktop or mobile.`);
+  }
+  return value;
+}
+const VARIANT = parseVariant();
+
 // ── Config ───────────────────────────────────────────────────────────────────
 const PRODUCT_ID = 26;
 const FIGMA_URL =
   'https://www.figma.com/design/V5L6H0bq5bgM362Lclwbdd/Apple-Landing-Page-Prototype--Community-?node-id=103-952&t=xdUK5HQcl5SxWFK5-11';
 const API_BASE = process.env.IWO_API_BASE || 'http://localhost:3000';
-const SCOPE = `.iwo-landing-${PRODUCT_ID}`;
+const SCOPE = `.iwo-landing-${PRODUCT_ID}${VARIANT === 'mobile' ? '-m' : ''}`;
 
 // Matches the admin landing-pipeline allowlist.
 const SANITIZE_OPTS = {
@@ -75,8 +89,8 @@ const SANITIZE_OPTS = {
 
 // ── Pipeline ─────────────────────────────────────────────────────────────────
 async function main() {
-  const sourcePath = join(__dirname, 'source.jsx');
-  const artifactsDir = join(__dirname, 'artifacts');
+  const sourcePath = join(__dirname, `source.${VARIANT}.jsx`);
+  const artifactsDir = join(__dirname, 'artifacts', VARIANT);
   mkdirSync(artifactsDir, { recursive: true });
 
   const source = readFileSync(sourcePath, 'utf8');
@@ -92,10 +106,16 @@ async function main() {
   // `width/height/flex-shrink` into the existing `style=""` attribute on
   // the opening root tag. Inline style survives CSS scoping and beats any
   // class-based size rule.
+  const FRAME_WIDTH = VARIANT === 'mobile' ? 375 : 1280;
+  // NOTE: height varies per Figma frame. 4698 is the desktop frame height;
+  // 3000 is a safe placeholder for the first mobile import — refine to the
+  // actual Figma frame height after the first MCP get_metadata call.
+  const FRAME_HEIGHT = VARIANT === 'mobile' ? 3000 : 4698;
+
   htmlRaw = htmlRaw.replace(
     /^<div class="relative size-full" style="([^"]*)"/,
     (_m, existing) =>
-      `<div class="relative size-full" style="${existing};width:1280px;height:4698px;flex-shrink:0"`,
+      `<div class="relative size-full" style="${existing};width:${FRAME_WIDTH}px;height:${FRAME_HEIGHT}px;flex-shrink:0"`,
   );
 
   // Strip `whitespace-nowrap` ONLY from the immediate wrapper `<div>` of
@@ -149,7 +169,7 @@ async function main() {
 
   // [2] Mirror assets to R2 via direct S3Client (checksum-compat with R2).
   console.log('[2/7] Mirroring assets to R2 (landing/26/…)…');
-  const mapping = await mirrorAssetsToR2({ assets, productId: PRODUCT_ID });
+  const mapping = await mirrorAssetsToR2({ assets, productId: PRODUCT_ID, variant: VARIANT });
   writeFileSync(
     join(artifactsDir, '2-asset-mapping.json'),
     JSON.stringify(mapping, null, 2),
@@ -345,7 +365,7 @@ ${SCOPE} { text-align: start; }
   // [7b] Wrap HTML in the scope class so the scoped CSS actually applies.
   // (The API also re-scopes CSS server-side; wrapping here makes the stored
   // state self-contained.)
-  const htmlWrapped = `<div class="iwo-landing-${PRODUCT_ID}">${htmlFinal}</div>`;
+  const htmlWrapped = `<div class="${SCOPE.slice(1)}">${htmlFinal}</div>`;
   writeFileSync(join(artifactsDir, '7-html-wrapped.html'), htmlWrapped);
 
   // [7c] Standalone triage preview: a full HTML document with Inter/Sofia Pro
@@ -391,6 +411,7 @@ ${htmlWrapped
     html: htmlWrapped,
     css: cssScoped,
     assetManifest,
+    variant: VARIANT,
   };
   writeFileSync(
     join(artifactsDir, 'patch-payload.json'),
