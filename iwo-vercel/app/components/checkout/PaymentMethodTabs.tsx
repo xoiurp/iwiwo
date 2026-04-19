@@ -9,10 +9,10 @@ type Props = {
   onChange: (v: PayMethod) => void;
 };
 
-const METHODS: Array<{ id: PayMethod; label: string; icon: string }> = [
-  { id: 'pix', label: 'Pix', icon: '\u25CF' },
-  { id: 'credit_card', label: 'Cartão', icon: '\u25A0' },
-  { id: 'boleto', label: 'Boleto', icon: '\u25B6' },
+const METHODS: Array<{ id: PayMethod; label: string; iconSrc: string }> = [
+  { id: 'pix', label: 'Pix', iconSrc: '/images/pix.svg' },
+  { id: 'credit_card', label: 'Cartão', iconSrc: '/images/card.svg' },
+  { id: 'boleto', label: 'Boleto', iconSrc: '/images/boleto.svg' },
 ];
 
 const styles: Record<string, CSSProperties> = {
@@ -25,12 +25,12 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     background: '#fff',
     transition: 'all .25s cubic-bezier(0.4,0,0.2,1)',
   },
   selected: { borderColor: '#0a0a0f', background: 'rgba(10,10,15,.02)' },
-  icon: { fontSize: 20 },
+  icon: { width: 32, height: 32, objectFit: 'contain', display: 'block' },
   label: { fontWeight: 600, fontSize: 14 },
 };
 
@@ -46,7 +46,8 @@ export function PaymentMethodTabs({ value, onChange }: Props) {
             onChange={() => onChange(m.id)}
             style={{ display: 'none' }}
           />
-          <span style={styles.icon}>{m.icon}</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={m.iconSrc} alt="" aria-hidden="true" style={styles.icon as CSSProperties} />
           <span style={styles.label}>{m.label}</span>
         </label>
       ))}
