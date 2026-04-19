@@ -19,8 +19,14 @@
   }
 }
 
-/* Quando o menu hamburguer abre em mobile, o backdrop fica branco
-   (Webflow default era transparente/herdado — dificulta leitura). */
+/* Quando o menu hamburguer abre em mobile, o backdrop fica branco.
+   O .navbar21_menu já tem background: #fff default (iwo-watch.webflow.css:7496),
+   mas em mobile o Webflow injeta um overlay absoluto .navbar21_bottom-
+   background-overlay-tablet com background: #eee (linha 10574) cobrindo-o.
+   Escondemos o overlay para o branco do menu aparecer. */
 .navbar21_menu.w--open {
   background: #fff !important;
+}
+.navbar21_bottom-background-overlay-tablet {
+  display: none !important;
 }
