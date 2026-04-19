@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/app/lib/auth";
 import { prisma } from "@/app/lib/prisma";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import ActiveLink from "./ActiveLink";
 import "./protected.css";
 
@@ -28,6 +29,10 @@ export default async function ProtectedContaLayout({
     user.customer?.name || user.name || user.email || "Minha conta";
 
   return (
+    <>
+    <div className="mobile-header-only">
+      <SiteHeader />
+    </div>
     <div className="conta-shell">
       <aside className="conta-sidebar" aria-label="Menu da conta">
         <div className="conta-user">
@@ -60,5 +65,6 @@ export default async function ProtectedContaLayout({
       </aside>
       <main className="conta-main">{children}</main>
     </div>
+    </>
   );
 }

@@ -1,9 +1,14 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { SiteHeader } from "@/app/components/SiteHeader";
 import "./auth.css";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
+    <>
+    <div className="mobile-header-only">
+      <SiteHeader />
+    </div>
     <div className="auth-shell">
       <div className="auth-card">
         <Link href="/" className="auth-logo-link">
@@ -16,5 +21,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="auth-content">{children}</div>
       </div>
     </div>
+    </>
   );
 }

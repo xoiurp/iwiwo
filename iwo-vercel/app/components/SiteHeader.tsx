@@ -14,11 +14,28 @@
  */
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './site-header.css';
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const toggleMenu = useCallback(() => {
+    setMenuOpen((v) => {
+      const next = !v;
+      document.body.classList.toggle('menu-is-open', next);
+      return next;
+    });
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
+    document.body.classList.remove('menu-is-open');
+  }, []);
+
+  useEffect(() => {
+    return () => document.body.classList.remove('menu-is-open');
+  }, []);
 
   return (
     <div
@@ -30,6 +47,12 @@ export function SiteHeader() {
       role="banner"
       data-duration="0"
     >
+      {/* Backdrop overlay */}
+      <div
+        className={`mobile-menu-backdrop${menuOpen ? ' is-visible' : ''}`}
+        onClick={closeMenu}
+        aria-hidden="true"
+      />
       <div className="navbar21_container">
         <Link href="/" className="navbar21_logo-link w-nav-brand">
           <img
@@ -69,54 +92,54 @@ export function SiteHeader() {
           <nav
             role="navigation"
             className={`navbar21_menu w-nav-menu${menuOpen ? ' w--open' : ''}`}
-            style={menuOpen ? { display: 'block' } : undefined}
           >
             <div className="navbar21_menu-wrapper">
               <div className="navbar21_menu-left">
+                <div className="mobile-menu-category">Smartwatches</div>
                 <div className="navbar21_menu-links-wrapper">
-                  <Link href="/p/iwo-ultra-3-amoled" className="link-block-9 w-inline-block">
+                  <Link href="/p/iwo-ultra-3-amoled" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-block-60">
                       <img src="/images/svgexport-19.svg" alt="" className="icone-prod" />
                       <h1 className="heading-22-copy">Iwo Ultra 3 AMOLED</h1>
                     </div>
                   </Link>
-                  <Link href="/p/iwo-15x" className="link-block-9 w-inline-block">
+                  <Link href="/p/iwo-15x" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-block-60">
                       <img src="/images/svgexport-20.svg" alt="" className="icone-prod" />
                       <h1 className="heading-22">Iwo 15X Pro</h1>
                     </div>
                   </Link>
-                  <Link href="/p/iwo-14-mini" className="link-block-9 w-inline-block">
+                  <Link href="/p/iwo-14-mini" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-block-60">
                       <img src="/images/svgexport-22.svg" alt="" className="icone-prod" />
                       <h1 className="heading-22">Iwo 14 Mini</h1>
                     </div>
                   </Link>
-                  <Link href="/p/iwo-14-pro-max" className="link-block-9 w-inline-block">
+                  <Link href="/p/iwo-14-pro-max" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-block-60">
                       <img src="/images/svgexport-20.svg" alt="" className="icone-prod" />
                       <h1 className="heading-22">Iwo 14 Pro Max</h1>
                     </div>
                   </Link>
-                  <Link href="/p/iwo-15-x-mini" className="link-block-9 w-inline-block">
+                  <Link href="/p/iwo-15-x-mini" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-block-60">
                       <img src="/images/svgexport-21.svg" alt="" className="icone-prod" />
                       <h1 className="heading-22">Iwo 15X Mini</h1>
                     </div>
                   </Link>
-                  <Link href="/loja" className="link-block-9 w-inline-block">
+                  <Link href="/loja" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-block-60">
                       <img src="/images/svgexport-23.svg" alt="" className="image-40" />
                       <h1 className="heading-22">Air Pods Pro</h1>
                     </div>
                   </Link>
-                  <Link href="/loja" className="link-block-9 w-inline-block">
+                  <Link href="/loja" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-block-60">
                       <img src="/images/svgexport-24.svg" alt="" className="icone-prod" />
                       <h1 className="heading-22">Air Pods Max</h1>
                     </div>
                   </Link>
-                  <Link href="/loja" className="link-block-9 w-inline-block">
+                  <Link href="/loja" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-block-60">
                       <img src="/images/watch_nav_bands_large_.svg" alt="" />
                       <h1 className="heading-22">Pulseiras</h1>
@@ -126,6 +149,7 @@ export function SiteHeader() {
                     href="/loja"
                     aria-current="page"
                     className="link-block-9 w-inline-block w--current"
+                    onClick={closeMenu}
                   >
                     <div className="div-block-60">
                       <img src="/images/shopping-bag.svg" alt="" className="icone-prod" />
@@ -133,14 +157,15 @@ export function SiteHeader() {
                     </div>
                   </Link>
                 </div>
+                <div className="mobile-menu-category">Conta & Suporte</div>
                 <div className="navbar21_menu-links-wrapper-copy">
-                  <Link href="/conta" className="link-block-9 w-inline-block">
+                  <Link href="/conta" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-supop">
                       <img src="/images/account.svg" alt="" className="image-38" />
                       <h1 className="heading-22">Minha Conta</h1>
                     </div>
                   </Link>
-                  <Link href="/conta" className="link-block-9 w-inline-block">
+                  <Link href="/conta" className="link-block-9 w-inline-block" onClick={closeMenu}>
                     <div className="div-supop">
                       <img src="/images/Air-Pods-Max.svg" alt="" className="image-39" />
                       <h1 className="heading-22">Suporte ao Cliente</h1>
@@ -152,15 +177,14 @@ export function SiteHeader() {
                 <div className="div-block-63">
                   <h1 className="heading-24">Artigos do Blog em Destaque</h1>
                 </div>
-                {/* TODO: Webflow CMS dynamic list — substituir por CMS real quando existir */}
                 <div className="div-block-63">
-                  <Link href="/blog" className="button-20 w-button">
+                  <Link href="/blog" className="button-20 w-button" onClick={closeMenu}>
                     Ver Blog
                   </Link>
                 </div>
               </div>
               <div className="navbar21_bottom">
-                <Link href="/contato" className="text-size-large">
+                <Link href="/contato" className="text-size-large" onClick={closeMenu}>
                   Contato
                 </Link>
                 <div className="w-layout-grid navbar21_social-list">
@@ -231,7 +255,7 @@ export function SiteHeader() {
               className="navbar21_menu-button w-nav-button"
               aria-label="Abrir menu"
               aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((v) => !v)}
+              onClick={toggleMenu}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
             >
               <div className="menu-icon4">
