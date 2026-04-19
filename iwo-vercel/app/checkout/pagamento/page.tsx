@@ -51,6 +51,45 @@ export default function PagamentoPage() {
     }
   }, [hydrated, state, router]);
 
+  // Pré-preenche dados do pagador com o perfil do cliente logado.
+  // Se for guest, /api/customer/profile retorna 401 e mantemos os
+  // campos vazios (usuário preenche manualmente). Só dispara uma vez
+  // e nunca sobrescreve o que o usuário já digitou.
+  const [profileSeeded, setProfileSeeded] = useState(false);
+  useEffect(() => {
+    if (!hydrated || profileSeeded) return;
+    setProfileSeeded(true);
+    (async () => {
+      try {
+        const res = await fetch('/api/customer/profile');
+        if (!res.ok) return;
+        const { user } = (await res.json()) as {
+          user?: {
+            email?: string;
+            customer?: { name?: string; phone?: string; cpf?: string };
+          };
+        };
+        if (!user) return;
+        const fullName = user.customer?.name ?? '';
+        setFirstName((prev) => {
+          if (prev) return prev;
+          const parts = fullName.trim().split(/\s+/);
+          return parts[0] ?? '';
+        });
+        setLastName((prev) => {
+          if (prev) return prev;
+          const parts = fullName.trim().split(/\s+/);
+          return parts.slice(1).join(' ');
+        });
+        setEmail((prev) => prev || user.email || '');
+        setCpf((prev) => prev || user.customer?.cpf || '');
+        setPhone((prev) => prev || user.customer?.phone || '');
+      } catch {
+        /* silent — guest ou rede instável; usuário preenche à mão */
+      }
+    })();
+  }, [hydrated, profileSeeded]);
+
   const shipName = state.shipTo?.name ?? null;
   if (shipName && seededShipName !== shipName) {
     setSeededShipName(shipName);
