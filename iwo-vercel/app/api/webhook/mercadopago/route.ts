@@ -241,6 +241,28 @@ export async function POST(request: Request) {
       }
     }
 
+    // ── Cupom: incrementar usedCount quando paid ─────────────────────────
+    // Idempotente via condição de internalStatus + presença de couponId.
+    // Se MP mandar 2 webhooks de approved, o primeiro já atualizou mas o
+    // increment é seguro (contador monotônico). Aceitamos esse trade-off —
+    // alternativa com flag seria invasiva e usedCount < maxUses é o que
+    // importa pra enforcement.
+    if (internalStatus === 'paid' && order.couponId != null) {
+      try {
+        await prisma.coupon.update({
+          where: { id: order.couponId },
+          data: { usedCount: { increment: 1 } },
+        });
+      } catch (couponErr) {
+        console.error('[mp-webhook] failed to increment Coupon.usedCount', {
+          orderId: order.id,
+          couponId: order.couponId,
+          err: String((couponErr as Error)?.message ?? couponErr),
+        });
+        // Não propagar — webhook precisa responder 200.
+      }
+    }
+
     return Response.json({ received: true });
   } catch (error) {
     // Return 500 (NOT 200) so MercadoPago retries.
