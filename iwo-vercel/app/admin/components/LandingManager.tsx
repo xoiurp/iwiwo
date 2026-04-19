@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '../lib/auth';
 import { formatRelativeTimeBR } from '@/app/lib/format';
 
@@ -11,7 +11,7 @@ interface LandingManagerProps {
   productSlug: string;
 }
 
-interface LandingStatus {
+interface VariantStatus {
   figmaUrl: string | null;
   importedAt: string | null;
   hasHtml: boolean;
@@ -19,7 +19,13 @@ interface LandingStatus {
   assetCount: number;
 }
 
-type UiState = 'loading' | 'empty' | 'imported' | 'error';
+interface LandingStatus {
+  desktop: VariantStatus;
+  mobile: VariantStatus;
+}
+
+type UiState = 'loading' | 'ready' | 'error';
+type Variant = 'desktop' | 'mobile';
 
 // ── Styles ──────────────────────────────────────────────────────────────────
 
@@ -200,14 +206,38 @@ const s = {
 
 // ── Prompt template ─────────────────────────────────────────────────────────
 
-function buildPrompt(productId: number, productSlug: string, figmaUrl: string): string {
-  return `Importe o Figma ${figmaUrl} para a landing do produto ${productSlug} (id: ${productId}).
+function buildPrompt(
+  productId: number,
+  productSlug: string,
+  figmaUrl: string,
+  variant: Variant,
+): string {
+  const variantFlag = variant === 'mobile' ? ' --variant=mobile' : '';
+  return `Importe o Figma ${figmaUrl} para a landing ${variant} do produto ${productSlug} (id: ${productId}).
 Use o MCP plugin:figma:figma.
-Faça mirror dos assets pro R2 (prefix landing/${productId}/), converta JSX→HTML com AST walker,
-compile Tailwind JIT, escope CSS com .iwo-landing-${productId}, sanitize com DOMPurify,
-substitua placeholders {Nome do Produto}→{{name}}, {Subtítulo do produto}→{{subtitle}},
-{Descrição curta do produto}→{{description}}, e faça PATCH /api/admin/products/${productId}/landing
-com { figmaUrl, html, css, assetManifest }.`;
+Rode: node scripts/figma-import-${productId}/import.mjs${variantFlag}`;
+}
+
+function emptyVariant(): VariantStatus {
+  return { figmaUrl: null, importedAt: null, hasHtml: false, hasCss: false, assetCount: 0 };
+}
+
+function readVariant(raw: unknown): VariantStatus {
+  if (!raw || typeof raw !== 'object') return emptyVariant();
+  const v = raw as Record<string, unknown>;
+  const manifest = v.assetManifest;
+  const assetCount = Array.isArray(manifest)
+    ? manifest.length
+    : manifest && typeof manifest === 'object'
+      ? Object.keys(manifest).length
+      : 0;
+  return {
+    figmaUrl: (v.figmaUrl as string | null) ?? null,
+    importedAt: (v.importedAt as string | null) ?? null,
+    hasHtml: Boolean(typeof v.html === 'string' && v.html.length > 0),
+    hasCss: Boolean(typeof v.css === 'string' && v.css.length > 0),
+    assetCount,
+  };
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -215,43 +245,24 @@ com { figmaUrl, html, css, assetManifest }.`;
 export default function LandingManager({ productId, productSlug }: LandingManagerProps) {
   const [uiState, setUiState] = useState<UiState>('loading');
   const [status, setStatus] = useState<LandingStatus | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [deletingVariant, setDeletingVariant] = useState<Variant | null>(null);
   const [deleteError, setDeleteError] = useState('');
 
   const load = useCallback(async () => {
     setUiState('loading');
     try {
       const res = await adminFetch(`/api/admin/products/${productId}/landing`);
-      if (res.status === 404) {
-        setStatus(null);
-        setUiState('empty');
-        return;
-      }
       if (!res.ok) {
         setUiState('error');
         return;
       }
       const body = await res.json();
-      const html: string | null = body?.html ?? null;
-      const css: string | null = body?.css ?? null;
-      const manifest = body?.assetManifest;
-      const assetCount =
-        Array.isArray(manifest)
-          ? manifest.length
-          : manifest && typeof manifest === 'object'
-            ? Object.keys(manifest).length
-            : 0;
-      const next: LandingStatus = {
-        figmaUrl: body?.figmaUrl ?? null,
-        importedAt: body?.importedAt ?? null,
-        hasHtml: Boolean(html && html.length > 0),
-        hasCss: Boolean(css && css.length > 0),
-        assetCount,
-      };
-      setStatus(next);
-      // Treat as "imported" only when we actually have HTML payload.
-      setUiState(next.hasHtml || next.figmaUrl ? 'imported' : 'empty');
+      setStatus({
+        desktop: readVariant(body?.desktop),
+        mobile: readVariant(body?.mobile),
+      });
+      setUiState('ready');
     } catch {
       setUiState('error');
     }
@@ -261,53 +272,41 @@ export default function LandingManager({ productId, productSlug }: LandingManage
     load();
   }, [load]);
 
-  const emptyPrompt = useMemo(
-    () => buildPrompt(productId, productSlug, '<URL_AQUI>'),
-    [productId, productSlug]
-  );
-
-  const reimportPrompt = useMemo(
-    () => buildPrompt(productId, productSlug, status?.figmaUrl || '<URL_AQUI>'),
-    [productId, productSlug, status?.figmaUrl]
-  );
-
-  async function copyPrompt(text: string) {
+  async function copyPrompt(key: string, text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
     } catch {
       // Clipboard API can fail in insecure contexts — no-op.
     }
   }
 
-  async function handleDelete() {
+  async function handleDeleteVariant(variant: Variant) {
     const confirmed = window.confirm(
-      'Remover a landing do produto? A página voltará a exibir apenas o template padrão. Os assets no R2 permanecem (limpeza manual).'
+      `Remover a landing ${variant}? Os assets no R2 permanecem (limpeza manual).`,
     );
     if (!confirmed) return;
 
-    setDeleting(true);
+    setDeletingVariant(variant);
     setDeleteError('');
     try {
-      const res = await adminFetch(`/api/admin/products/${productId}/landing`, {
-        method: 'DELETE',
-      });
+      const res = await adminFetch(
+        `/api/admin/products/${productId}/landing?variant=${variant}`,
+        { method: 'DELETE' },
+      );
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setDeleteError(body?.error || 'Erro ao remover a landing.');
+        setDeleteError(body?.error || `Erro ao remover landing ${variant}.`);
         return;
       }
-      setStatus(null);
-      setUiState('empty');
+      await load();
     } catch {
-      setDeleteError('Erro de conexão ao remover a landing.');
+      setDeleteError('Erro de conexão ao remover.');
     } finally {
-      setDeleting(false);
+      setDeletingVariant(null);
     }
   }
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   if (uiState === 'loading') {
     return (
@@ -318,7 +317,7 @@ export default function LandingManager({ productId, productSlug }: LandingManage
     );
   }
 
-  if (uiState === 'error') {
+  if (uiState === 'error' || !status) {
     return (
       <div style={s.wrap}>
         <h3 style={s.heading}>Landing personalizada</h3>
@@ -332,73 +331,96 @@ export default function LandingManager({ productId, productSlug }: LandingManage
     );
   }
 
-  if (uiState === 'empty') {
-    return (
-      <div style={s.wrap}>
-        <h3 style={s.heading}>Landing personalizada</h3>
-        <p style={s.sub}>
-          Esta área mostra uma página desenhada no Figma abaixo da página do produto.
-          Para importar, rode Claude Code com MCP do Figma autenticado e diga:
-        </p>
-        <div style={s.promptBox}>{emptyPrompt}</div>
-        <div style={s.actions}>
-          <button
-            type="button"
-            style={s.copyBtn}
-            onClick={() => copyPrompt(emptyPrompt)}
-          >
-            Copiar prompt
-          </button>
-          {copied && <span style={s.copyOk}>Copiado!</span>}
-        </div>
-      </div>
+  function renderCard(variant: Variant, v: VariantStatus) {
+    const label = variant === 'desktop' ? '💻 Desktop' : '📱 Mobile';
+    const hasContent = v.hasHtml || v.figmaUrl;
+    const importedAtRel = v.importedAt ? formatRelativeTimeBR(v.importedAt) : '';
+    const prompt = buildPrompt(
+      productId,
+      productSlug,
+      v.figmaUrl || '<URL_AQUI>',
+      variant,
     );
-  }
+    const copyKey = `prompt:${variant}`;
 
-  // imported
-  const importedAtRel = status?.importedAt ? formatRelativeTimeBR(status.importedAt) : '';
-
-  return (
-    <div style={s.wrap}>
-      <h3 style={s.heading}>
-        Landing personalizada
-        <span style={s.badge}>ativa</span>
-      </h3>
-
-      <div style={s.grid2}>
-        <div style={s.card}>
-          <div style={s.cardLabel}>Figma source</div>
-          <div style={s.cardValue}>
-            {status?.figmaUrl ? (
-              <>
+    return (
+      <div style={s.card} key={variant}>
+        <div style={s.cardLabel}>{label}</div>
+        {hasContent ? (
+          <>
+            <div style={s.cardValue}>
+              {v.figmaUrl ? (
                 <a
-                  href={status.figmaUrl}
+                  href={v.figmaUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={s.link}
                 >
                   Abrir no Figma
                 </a>
-                <div style={{ color: '#666', marginTop: 6, fontSize: 12 }}>
-                  Última importação: {importedAtRel || '—'}
-                </div>
-              </>
-            ) : (
-              <span style={{ color: '#666' }}>—</span>
-            )}
-          </div>
-        </div>
-
-        <div style={s.card}>
-          <div style={s.cardLabel}>Conteúdo</div>
-          <div style={s.cardValue}>
-            <div>{status?.hasHtml ? 'HTML presente' : '—'}</div>
-            <div>{status?.hasCss ? 'CSS presente' : '—'}</div>
-            <div>{status?.assetCount ?? 0} asset(s) no R2</div>
-          </div>
-        </div>
+              ) : (
+                <span style={{ color: '#666' }}>—</span>
+              )}
+              <div style={{ color: '#666', marginTop: 6, fontSize: 12 }}>
+                Última importação: {importedAtRel || '—'}
+              </div>
+              <div style={{ color: '#666', marginTop: 2, fontSize: 12 }}>
+                {v.assetCount} asset(s) no R2 · HTML {v.hasHtml ? '✓' : '✗'} · CSS{' '}
+                {v.hasCss ? '✓' : '✗'}
+              </div>
+            </div>
+            <div style={s.actions}>
+              <button
+                type="button"
+                style={s.btn}
+                onClick={() => copyPrompt(copyKey, prompt)}
+              >
+                Reimportar (copiar prompt)
+              </button>
+              {copiedKey === copyKey && <span style={s.copyOk}>Copiado!</span>}
+              <button
+                type="button"
+                style={{ ...s.btnDanger, opacity: deletingVariant === variant ? 0.7 : 1 }}
+                onClick={() => handleDeleteVariant(variant)}
+                disabled={deletingVariant !== null}
+              >
+                {deletingVariant === variant ? 'Removendo...' : 'Remover'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ ...s.cardValue, color: '#666', marginBottom: 8 }}>
+              Ainda não importada.
+            </div>
+            <div style={s.promptBox}>{prompt}</div>
+            <div style={s.actions}>
+              <button
+                type="button"
+                style={s.copyBtn}
+                onClick={() => copyPrompt(copyKey, prompt)}
+              >
+                Copiar prompt
+              </button>
+              {copiedKey === copyKey && <span style={s.copyOk}>Copiado!</span>}
+            </div>
+          </>
+        )}
       </div>
+    );
+  }
 
+  return (
+    <div style={s.wrap}>
+      <h3 style={s.heading}>Landing personalizada</h3>
+      <p style={s.sub}>
+        Duas variantes independentes: desktop (≥ 769px) e mobile (≤ 768px). Cada uma é
+        importada via Claude Code com o MCP do Figma autenticado.
+      </p>
+      <div style={s.grid2}>
+        {renderCard('desktop', status.desktop)}
+        {renderCard('mobile', status.mobile)}
+      </div>
       <div style={s.actions}>
         <a
           href={`/p/${productSlug}`}
@@ -408,46 +430,12 @@ export default function LandingManager({ productId, productSlug }: LandingManage
         >
           Ver preview
         </a>
-        <button
-          type="button"
-          style={s.btn}
-          title="Reimporte via Claude Code copiando o prompt abaixo"
-          onClick={() => copyPrompt(reimportPrompt)}
-        >
-          Reimportar
-        </button>
-        {copied && <span style={s.copyOk}>Copiado!</span>}
-        <button
-          type="button"
-          style={{ ...s.btnDanger, opacity: deleting ? 0.7 : 1 }}
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          {deleting ? 'Removendo...' : 'Remover landing'}
-        </button>
       </div>
-
       {deleteError && (
         <div style={{ ...s.err, marginTop: 12 }}>
           <span>{deleteError}</span>
         </div>
       )}
-
-      <details style={s.expandDetails}>
-        <summary style={s.expandSummary}>Ver prompt de reimportação</summary>
-        <hr style={s.divider} />
-        <div style={s.promptBox}>{reimportPrompt}</div>
-        <div style={s.actions}>
-          <button
-            type="button"
-            style={s.copyBtn}
-            onClick={() => copyPrompt(reimportPrompt)}
-          >
-            Copiar prompt
-          </button>
-          {copied && <span style={s.copyOk}>Copiado!</span>}
-        </div>
-      </details>
     </div>
   );
 }
