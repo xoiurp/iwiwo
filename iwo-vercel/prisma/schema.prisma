@@ -134,6 +134,13 @@ model Product {
   landingAssetManifest Json?     @map("landing_asset_manifest") @db.JsonB
   landingImportedAt    DateTime? @map("landing_imported_at")
 
+  // ── Landing Mobile variant (Figma-imported @ 375px) ────────────────────
+  landingMobileFigmaUrl      String?   @map("landing_mobile_figma_url") @db.VarChar(500)
+  landingMobileHtml          String?   @map("landing_mobile_html") @db.Text
+  landingMobileCss           String?   @map("landing_mobile_css") @db.Text
+  landingMobileAssetManifest Json?     @map("landing_mobile_asset_manifest") @db.JsonB
+  landingMobileImportedAt    DateTime? @map("landing_mobile_imported_at")
+
   // Relations
   variants   ProductVariant[]
   orderItems OrderItem[]
