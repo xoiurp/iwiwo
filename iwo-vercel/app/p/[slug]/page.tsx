@@ -100,14 +100,15 @@ export default async function ProductPage({ params }: { params: Params }) {
   return (
     <>
       <ProductTemplate html={templateBefore} slug={slug} />
-      {product.landingHtml ? (
-        <LandingSection
-          productId={product.id}
-          html={product.landingHtml}
-          css={product.landingCss}
-          variables={landingVars}
-        />
-      ) : null}
+      <LandingSection
+        productId={product.id}
+        desktop={{ html: product.landingHtml, css: product.landingCss }}
+        mobile={{
+          html: product.landingMobileHtml,
+          css: product.landingMobileCss,
+        }}
+        variables={landingVars}
+      />
       {templateAfter ? (
         <ProductTemplate html={templateAfter} slug={slug} />
       ) : null}
