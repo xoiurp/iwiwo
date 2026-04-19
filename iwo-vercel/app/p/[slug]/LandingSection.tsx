@@ -10,7 +10,7 @@
 // {{name}} / {{subtitle}} / {{description}} tokens survive sanitization
 // and are replaced here at render time with HTML-escaped values.
 
-import { interpolateLandingHtml } from "@/app/lib/landing-pipeline";
+import { interpolateLandingHtml } from "@/app/lib/landing-interpolate";
 
 type Props = {
   productId: number;
