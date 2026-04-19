@@ -45,28 +45,36 @@ export function sanitizeLandingHtml(raw: string): string {
 // ── Scope CSS to .iwo-landing-<productId> ────────────────────────────────────
 // Every rule is prefixed. :root / html / body references get stripped since
 // the landing lives in a sub-section. @keyframes and @font-face pass through.
-export async function scopeLandingCss(raw: string, productId: number): Promise<string> {
+export async function scopeLandingCss(
+  raw: string,
+  productId: number,
+  variant: "desktop" | "mobile" = "desktop",
+): Promise<string> {
   if (!raw) return "";
-  const scope = `.iwo-landing-${productId}`;
+  const scope =
+    variant === "mobile"
+      ? `.iwo-landing-${productId}-m`
+      : `.iwo-landing-${productId}`;
   const result = await postcss([
     prefixer({
       prefix: scope,
       transform(prefix, selector, prefixedSelector) {
-        // Normalize html/body/:root → drop them (landing is scoped)
         const trimmed = selector.trim();
-        if (trimmed === "html" || trimmed === "body" || trimmed === ":root" || trimmed === "*") {
+        if (
+          trimmed === "html" ||
+          trimmed === "body" ||
+          trimmed === ":root" ||
+          trimmed === "*"
+        ) {
           return prefix;
         }
-        // Selector already starts with `:where(.iwo-landing-<id>)` — leave
-        // it alone. The Figma-import pipeline (scripts/figma-import-26)
-        // emits a low-specificity :where()-scoped reset that we must NOT
-        // re-prefix; doing so would push the specificity back up to (0,1,1)
-        // and override Tailwind utilities inappropriately.
+        // Selector already starts with `:where(<prefix>)` — leave it alone
+        // (import pipeline emits a low-specificity :where()-scoped reset
+        // that must NOT be re-prefixed).
         if (trimmed.startsWith(`:where(${prefix})`)) {
           return selector;
         }
-        // Selector already starts with the scope class — leave it alone
-        // (defense in depth for clients that pre-scope manually).
+        // Selector already starts with the scope class — leave it alone.
         if (trimmed.startsWith(`${prefix} `) || trimmed === prefix) {
           return selector;
         }
