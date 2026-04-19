@@ -5,9 +5,9 @@
 // landing state; the public renderer is responsible for interpolation.
 //
 // Endpoints:
-//   GET    → full stored landing state (admin preview/edit fetch)
-//   PATCH  → partial update of figmaUrl/html/css/assetManifest
-//   DELETE → clear all landing fields (R2 assets are NOT deleted — manual)
+//   GET    → full stored landing state for both desktop + mobile variants
+//   PATCH  → partial update; discriminates by `variant` field in body ('desktop'|'mobile', default 'desktop')
+//   DELETE → clear landing fields; discriminates by ?variant query param ('desktop'|'mobile'|'all', default 'all')
 
 import { prisma } from '@/app/lib/prisma';
 import { Prisma } from '@prisma/client';
@@ -52,7 +52,7 @@ function isValidManifest(value: unknown): value is string[] {
   return true;
 }
 
-// ── GET: Full landing state (admin-only) ────────────────────────────────────
+// ── GET: Full landing state for both variants (admin-only) ──────────────────
 
 export async function GET(
   request: Request,
@@ -73,11 +73,18 @@ export async function GET(
       select: {
         id: true,
         slug: true,
+        // desktop
         landingFigmaUrl: true,
         landingHtml: true,
         landingCss: true,
         landingAssetManifest: true,
         landingImportedAt: true,
+        // mobile
+        landingMobileFigmaUrl: true,
+        landingMobileHtml: true,
+        landingMobileCss: true,
+        landingMobileAssetManifest: true,
+        landingMobileImportedAt: true,
       },
     });
 
@@ -88,11 +95,20 @@ export async function GET(
     return Response.json({
       id: product.id,
       slug: product.slug,
-      figmaUrl: product.landingFigmaUrl,
-      html: product.landingHtml,
-      css: product.landingCss,
-      assetManifest: product.landingAssetManifest ?? null,
-      importedAt: product.landingImportedAt,
+      desktop: {
+        figmaUrl: product.landingFigmaUrl,
+        html: product.landingHtml,
+        css: product.landingCss,
+        assetManifest: product.landingAssetManifest ?? null,
+        importedAt: product.landingImportedAt,
+      },
+      mobile: {
+        figmaUrl: product.landingMobileFigmaUrl,
+        html: product.landingMobileHtml,
+        css: product.landingMobileCss,
+        assetManifest: product.landingMobileAssetManifest ?? null,
+        importedAt: product.landingMobileImportedAt,
+      },
     });
   } catch (error) {
     console.error('Erro ao buscar landing:', error);
@@ -100,7 +116,7 @@ export async function GET(
   }
 }
 
-// ── PATCH: Partial landing update ────────────────────────────────────────────
+// ── PATCH: Partial landing update (variant-aware) ────────────────────────────
 
 export async function PATCH(
   request: Request,
@@ -131,19 +147,33 @@ export async function PATCH(
       return Response.json({ error: 'JSON inválido' }, { status: 400 });
     }
 
-    const { figmaUrl, html, css, assetManifest } = body as {
+    const { figmaUrl, html, css, assetManifest, variant: rawVariant } = body as {
       figmaUrl?: unknown;
       html?: unknown;
       css?: unknown;
       assetManifest?: unknown;
+      variant?: unknown;
     };
 
-    const data: Prisma.ProductUpdateInput = {};
+    // Discriminate: default 'desktop' for backward compatibility.
+    const variant: 'desktop' | 'mobile' =
+      rawVariant === 'mobile' ? 'mobile' : 'desktop';
 
-    // ── figmaUrl ────────────────────────────────────────────────────────────
+    // Column name resolver.
+    const col = {
+      figmaUrl: variant === 'mobile' ? 'landingMobileFigmaUrl' : 'landingFigmaUrl',
+      html: variant === 'mobile' ? 'landingMobileHtml' : 'landingHtml',
+      css: variant === 'mobile' ? 'landingMobileCss' : 'landingCss',
+      manifest: variant === 'mobile' ? 'landingMobileAssetManifest' : 'landingAssetManifest',
+      importedAt: variant === 'mobile' ? 'landingMobileImportedAt' : 'landingImportedAt',
+    } as const;
+
+    const data: Record<string, unknown> = {};
+
+    // figmaUrl
     if (figmaUrl !== undefined) {
       if (figmaUrl === null) {
-        data.landingFigmaUrl = null;
+        data[col.figmaUrl] = null;
       } else if (typeof figmaUrl !== 'string') {
         return Response.json(
           { error: 'figmaUrl deve ser string ou null' },
@@ -159,14 +189,14 @@ export async function PATCH(
             { status: 400 }
           );
         }
-        data.landingFigmaUrl = trimmed;
+        data[col.figmaUrl] = trimmed;
       }
     }
 
-    // ── html (sanitize) ─────────────────────────────────────────────────────
+    // html (sanitize)
     if (html !== undefined) {
       if (html === null) {
-        data.landingHtml = null;
+        data[col.html] = null;
       } else if (typeof html !== 'string') {
         return Response.json(
           { error: 'html deve ser string ou null' },
@@ -180,15 +210,14 @@ export async function PATCH(
           );
         }
         const cleaned = sanitizeLandingHtml(html);
-        // Empty-guard: if sanitize produced an empty string, store null.
-        data.landingHtml = cleaned.trim().length === 0 ? null : cleaned;
+        data[col.html] = cleaned.trim().length === 0 ? null : cleaned;
       }
     }
 
-    // ── css (scope to .iwo-landing-<productId>) ─────────────────────────────
+    // css (scope, variant-aware)
     if (css !== undefined) {
       if (css === null) {
-        data.landingCss = null;
+        data[col.css] = null;
       } else if (typeof css !== 'string') {
         return Response.json(
           { error: 'css deve ser string ou null' },
@@ -201,15 +230,15 @@ export async function PATCH(
             { status: 413 }
           );
         }
-        const scoped = await scopeLandingCss(css, product.id);
-        data.landingCss = scoped.trim().length === 0 ? null : scoped;
+        const scoped = await scopeLandingCss(css, product.id, variant);
+        data[col.css] = scoped.trim().length === 0 ? null : scoped;
       }
     }
 
-    // ── assetManifest ───────────────────────────────────────────────────────
+    // assetManifest
     if (assetManifest !== undefined) {
       if (assetManifest === null) {
-        data.landingAssetManifest = Prisma.DbNull;
+        data[col.manifest] = Prisma.DbNull;
       } else if (!isValidManifest(assetManifest)) {
         return Response.json(
           {
@@ -218,7 +247,7 @@ export async function PATCH(
           { status: 400 }
         );
       } else {
-        data.landingAssetManifest = assetManifest as Prisma.InputJsonValue;
+        data[col.manifest] = assetManifest as Prisma.InputJsonValue;
       }
     }
 
@@ -229,28 +258,39 @@ export async function PATCH(
       );
     }
 
-    data.landingImportedAt = new Date();
+    data[col.importedAt] = new Date();
 
     const updated = await prisma.product.update({
       where: { id: product.id },
-      data,
+      data: data as Prisma.ProductUpdateInput,
       select: {
         id: true,
         slug: true,
         landingHtml: true,
         landingCss: true,
         landingImportedAt: true,
+        landingMobileHtml: true,
+        landingMobileCss: true,
+        landingMobileImportedAt: true,
       },
     });
 
     return Response.json({
       success: true,
+      variant,
       product: {
         id: updated.id,
         slug: updated.slug,
-        landingHtml: updated.landingHtml !== null && updated.landingHtml.length > 0,
-        landingCss: updated.landingCss !== null && updated.landingCss.length > 0,
-        landingImportedAt: updated.landingImportedAt,
+        desktop: {
+          hasHtml: (updated.landingHtml ?? '').length > 0,
+          hasCss: (updated.landingCss ?? '').length > 0,
+          importedAt: updated.landingImportedAt,
+        },
+        mobile: {
+          hasHtml: (updated.landingMobileHtml ?? '').length > 0,
+          hasCss: (updated.landingMobileCss ?? '').length > 0,
+          importedAt: updated.landingMobileImportedAt,
+        },
       },
     });
   } catch (error) {
@@ -263,7 +303,7 @@ export async function PATCH(
   }
 }
 
-// ── DELETE: Clear all landing fields ─────────────────────────────────────────
+// ── DELETE: Clear landing fields (variant-aware) ─────────────────────────────
 // TODO: R2 objects under landing/<productId>/ are NOT deleted here.
 // Admins may want to retain them for re-import. Implement explicit cleanup
 // (e.g. admin-triggered bulk purge) in a future task.
@@ -282,19 +322,44 @@ export async function DELETE(
       return Response.json({ error: 'ID inválido' }, { status: 400 });
     }
 
+    const url = new URL(request.url);
+    const variantParam = url.searchParams.get('variant');
+    const variant: 'desktop' | 'mobile' | 'all' =
+      variantParam === 'mobile'
+        ? 'mobile'
+        : variantParam === 'desktop'
+          ? 'desktop'
+          : 'all';
+
+    const desktopClear = {
+      landingFigmaUrl: null,
+      landingHtml: null,
+      landingCss: null,
+      landingAssetManifest: Prisma.DbNull,
+      landingImportedAt: null,
+    };
+    const mobileClear = {
+      landingMobileFigmaUrl: null,
+      landingMobileHtml: null,
+      landingMobileCss: null,
+      landingMobileAssetManifest: Prisma.DbNull,
+      landingMobileImportedAt: null,
+    };
+
+    const data: Prisma.ProductUpdateInput =
+      variant === 'desktop'
+        ? desktopClear
+        : variant === 'mobile'
+          ? mobileClear
+          : { ...desktopClear, ...mobileClear };
+
     await prisma.product.update({
       where: { id: productId },
-      data: {
-        landingFigmaUrl: null,
-        landingHtml: null,
-        landingCss: null,
-        landingAssetManifest: Prisma.DbNull,
-        landingImportedAt: null,
-      },
+      data,
       select: { id: true },
     });
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, variant });
   } catch (error) {
     const code = (error as { code?: string })?.code;
     if (code === 'P2025') {
@@ -304,4 +369,3 @@ export async function DELETE(
     return Response.json({ error: 'Erro ao excluir landing' }, { status: 500 });
   }
 }
-
