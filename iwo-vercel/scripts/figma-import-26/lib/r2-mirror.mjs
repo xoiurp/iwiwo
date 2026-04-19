@@ -34,7 +34,7 @@ function makeClient() {
   });
 }
 
-export async function mirrorAssetsToR2({ assets, productId }) {
+export async function mirrorAssetsToR2({ assets, productId, variant = 'desktop' }) {
   const bucket = process.env.R2_BUCKET_NAME;
   const publicBase = process.env.R2_PUBLIC_URL;
   if (!bucket || !publicBase) {
@@ -60,7 +60,7 @@ export async function mirrorAssetsToR2({ assets, productId }) {
     }
     const buf = Buffer.from(await res.arrayBuffer());
 
-    const key = `landing/${productId}/${randomUUID()}.${ext}`;
+    const key = `landing/${productId}/${variant}/${randomUUID()}.${ext}`;
     await client.send(new PutObjectCommand({
       Bucket: bucket,
       Key: key,
