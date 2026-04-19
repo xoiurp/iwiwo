@@ -31,9 +31,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     where: { id: orderId },
     include: { orderItems: true },
   });
-  if (!order) return Response.json({ error: 'Pedido não encontrado' }, { status: 404 });
-
-  if (!order.createdAt || !verifyOrderToken(orderId, order.createdAt, token)) {
+  if (!order || !order.createdAt || !verifyOrderToken(orderId, order.createdAt, token)) {
     return Response.json({ error: 'Token inválido' }, { status: 403 });
   }
 
