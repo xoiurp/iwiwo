@@ -26,7 +26,36 @@
    Escondemos o overlay para o branco do menu aparecer. */
 .navbar21_menu.w--open {
   background: #fff !important;
+  position: fixed !important;
+  inset: 0 !important;
+  /* 100dvh respeita a chrome bar dinâmica do mobile; height: 100vh como
+     fallback para browsers antigos. */
+  height: 100vh !important;
+  height: 100dvh !important;
+  width: 100vw !important;
+  overflow-y: auto !important;
+  /* Sobe o menu acima do logo-link (z-index: 2) e do botão sem w--open */
+  z-index: 60 !important;
+  padding: 72px 16px 32px; /* respira do topo + laterais */
 }
 .navbar21_bottom-background-overlay-tablet {
   display: none !important;
 }
+
+/* Seção direita do menu tinha bg #eee ("Artigos do Blog em destaque") e
+   height: 100vh, empilhando total de ~200vh e forçando scroll externo.
+   Força branco e altura automática para tudo fluir dentro do menu. */
+.navbar21_menu-right,
+.navbar21_menu-right-2,
+.navbar21_bottom {
+  background: #fff !important;
+  height: auto !important;
+  padding: 1.5rem !important;
+}
+
+/* O hamburger precisa ficar clicável acima do menu para poder fechá-lo */
+.navbar21_menu-button {
+  z-index: 70 !important;
+}
+/* O próprio logo fica atrás quando o menu está aberto (menu cobre todo
+   o viewport). Opcional: esconder. Deixamos visível pra rapidez. */
