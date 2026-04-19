@@ -209,7 +209,7 @@ export async function PATCH(
             { status: 413 }
           );
         }
-        const cleaned = sanitizeLandingHtml(html);
+        const cleaned = await sanitizeLandingHtml(html);
         data[col.html] = cleaned.trim().length === 0 ? null : cleaned;
       }
     }

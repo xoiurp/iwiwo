@@ -1,4 +1,8 @@
-import DOMPurify from "isomorphic-dompurify";
+// `isomorphic-dompurify` is lazy-loaded inside `sanitizeLandingHtml` below
+// (not at module scope) because its jsdom init fails under Vercel's
+// serverless runtime and poisons the entire module's import graph —
+// specifically 500ing the admin landing GET that doesn't even use it.
+// See feedback_vercel_jsdom_isolation.md in the session memory.
 import postcss from "postcss";
 import prefixer from "postcss-prefix-selector";
 
@@ -28,8 +32,14 @@ const FORBID_ATTR = [
   "onpointerdown","onpointerup","onpointermove","onwheel","onscroll","oncontextmenu",
 ];
 
-export function sanitizeLandingHtml(raw: string): string {
+export async function sanitizeLandingHtml(raw: string): Promise<string> {
   if (!raw) return "";
+  // Dynamic-import DOMPurify on demand. Top-level import throws at module
+  // init time on Vercel serverless (jsdom world setup), which would make
+  // every route that reaches this module 500 even if it never calls
+  // sanitize. Deferring the load confines the failure surface to the
+  // sanitize call itself, which is only reached on admin PATCH.
+  const { default: DOMPurify } = await import("isomorphic-dompurify");
   // DOMPurify keeps ALLOWED_TAGS / strips everything else; FORBID_* lists add belt+suspenders
   return DOMPurify.sanitize(raw, {
     ALLOWED_TAGS,
