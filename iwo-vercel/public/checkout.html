@@ -113,6 +113,15 @@
     function clearCart() { saveCart([]); }
     function getCartTotal() { return getCart().reduce((s, i) => s + i.price * i.quantity, 0); }
     function formatBRL(v) { return 'R$ ' + v.toFixed(2).replace('.', ','); }
+    function escHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+    function safeUrl(u) {
+      const s = String(u ?? '');
+      return /^https?:\/\//i.test(s) ? s : '#';
+    }
 
     // =============================================
     // STATE
@@ -121,7 +130,7 @@
     let processing = false;
     let shippingOptions = [];
     let selectedShipping = null;
-    let cepFetching = false;
+    let cepReqId = 0;
 
     // =============================================
     // HELPERS: format + totals + shipping
@@ -155,6 +164,16 @@
           btn.textContent = 'Pagar ' + formatBRL(total);
         }
       }
+
+      // If card is the active payment method, remount with the updated amount
+      // so MercadoPago installment calculations reflect the shipping change.
+      if (paymentMethod === 'credit_card' && typeof renderPayForm === 'function') {
+        const payFormEl = document.getElementById('pay-form');
+        if (payFormEl && payFormEl.querySelector('#card-form')) {
+          // Remount only if already mounted (avoid infinite loop at initial render)
+          renderPayForm();
+        }
+      }
     }
 
     function renderShippingOptions(options) {
@@ -173,7 +192,7 @@
         <label class="shipping-option" data-idx="${i}">
           <input type="radio" name="shipping-opt" value="${i}" />
           <div class="shipping-option-info">
-            <div class="shipping-option-name">${opt.name}</div>
+            <div class="shipping-option-name">${escHtml(opt.name)}</div>
             <div class="shipping-option-eta">Chega em ${opt.deliveryMin === opt.deliveryMax ? opt.deliveryMin + ' dias úteis' : opt.deliveryMin + '–' + opt.deliveryMax + ' dias úteis'}</div>
           </div>
           <div class="shipping-option-price">${formatBRL(opt.price)}</div>
@@ -204,7 +223,7 @@
       const d = cep.replace(/\D/g, '');
       if (d.length !== 8) return null;
       try {
-        const res = await fetch('/api/shipping/cep/' + d);
+        const res = await fetch('/api/shipping/cep/' + d, { signal: AbortSignal.timeout(15000) });
         if (!res.ok) return null;
         return await res.json();
       } catch { return null; }
@@ -222,6 +241,7 @@
             toPostalCode: d,
             items: cart.map(it => ({ productId: it.productId, quantity: it.quantity })),
           }),
+          signal: AbortSignal.timeout(15000),
         });
         const data = await res.json();
         if (!res.ok) return { error: data.error || 'Falha ao cotar frete' };
@@ -237,13 +257,16 @@
       const cep = input.value;
       const d = cep.replace(/\D/g, '');
       if (d.length !== 8) return;
-      if (cepFetching) return;
-      cepFetching = true;
+
+      const myId = ++cepReqId;
       const errEl = document.getElementById('f-cep-err');
       if (errEl) errEl.parentElement.classList.remove('has-error');
       renderShippingSkeleton();
 
       const [cepData, quoteData] = await Promise.all([fetchViaCep(d), fetchQuote(d)]);
+
+      // Abort if a newer request has started
+      if (myId !== cepReqId) return;
 
       if (cepData) {
         const setIf = (id, value) => {
@@ -267,10 +290,9 @@
         const wrap = document.getElementById('shipping-options-wrapper');
         if (wrap) {
           const msg = (quoteData && quoteData.error) || 'Falha ao cotar frete.';
-          wrap.innerHTML = `<p style="font-size:13px;color:var(--iwo-danger);">${msg} <a href="#" onclick="handleCepChange();return false;" style="color:var(--iwo-accent);">Tentar novamente</a></p>`;
+          wrap.innerHTML = `<p style="font-size:13px;color:var(--iwo-danger);">${escHtml(msg)} <a href="#" onclick="handleCepChange();return false;" style="color:var(--iwo-accent);">Tentar novamente</a></p>`;
         }
       }
-      cepFetching = false;
     }
 
     // =============================================
@@ -361,11 +383,11 @@
             <div id="summary-items">
               ${cart.map(item => `
                 <div class="summary-item">
-                  <img src="${item.image || ''}" alt="${item.name}" onerror="this.style.display='none'" />
+                  <img src="${safeUrl(item.image)}" alt="${escHtml(item.name)}" onerror="this.style.display='none'" />
                   <div class="summary-item-info">
-                    <div class="summary-item-name">${item.name}</div>
-                    ${item.variantName ? `<div class="summary-item-variant">${item.variantName}</div>` : ''}
-                    <div class="summary-item-variant">Qtd: ${item.quantity}</div>
+                    <div class="summary-item-name">${escHtml(item.name)}</div>
+                    ${item.variantName ? `<div class="summary-item-variant">${escHtml(item.variantName)}</div>` : ''}
+                    <div class="summary-item-variant">Qtd: ${Number(item.quantity) || 0}</div>
                   </div>
                   <div class="summary-item-price">${formatBRL(item.price * item.quantity)}</div>
                 </div>`).join('')}
@@ -653,21 +675,21 @@
 
         if (data.status === 'approved') {
           clearCart();
-          resultEl.innerHTML = `<div class="msg-success"><h3 style="margin-bottom:8px;">Pagamento aprovado!</h3><p>Pedido #${data.orderId} confirmado.</p><p style="margin-top:12px;"><a href="/loja.html" style="color:#16a34a;">Continuar comprando</a></p></div>`;
+          resultEl.innerHTML = `<div class="msg-success"><h3 style="margin-bottom:8px;">Pagamento aprovado!</h3><p>Pedido #${escHtml(data.orderId)} confirmado.</p><p style="margin-top:12px;"><a href="/loja.html" style="color:#16a34a;">Continuar comprando</a></p></div>`;
           resultEl.style.display = 'block';
           btn.style.display = 'none';
         } else if (data.pix) {
           clearCart();
-          resultEl.innerHTML = `<div class="card pix-result"><h3 style="margin-bottom:8px;">Pague com Pix</h3><p style="font-size:13px;color:var(--iwo-muted);margin-bottom:12px;">Pedido #${data.orderId}</p>${data.pix.qr_code_base64 ? `<img src="data:image/png;base64,${data.pix.qr_code_base64}" alt="QR Code Pix" />` : ''}${data.pix.qr_code ? `<div class="pix-code" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado!';setTimeout(()=>this.textContent=this.dataset.code,2000)" data-code="${data.pix.qr_code}" title="Clique para copiar">${data.pix.qr_code}</div>` : ''}${data.pix.ticket_url ? `<a href="${data.pix.ticket_url}" target="_blank" style="color:var(--iwo-accent);font-size:13px;">Abrir pagina de pagamento</a>` : ''}</div>`;
+          resultEl.innerHTML = `<div class="card pix-result"><h3 style="margin-bottom:8px;">Pague com Pix</h3><p style="font-size:13px;color:var(--iwo-muted);margin-bottom:12px;">Pedido #${escHtml(data.orderId)}</p>${data.pix.qr_code_base64 ? `<img src="data:image/png;base64,${escHtml(data.pix.qr_code_base64)}" alt="QR Code Pix" />` : ''}${data.pix.qr_code ? `<div class="pix-code" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado!';setTimeout(()=>this.textContent=this.dataset.code,2000)" data-code="${escHtml(data.pix.qr_code)}" title="Clique para copiar">${escHtml(data.pix.qr_code)}</div>` : ''}${data.pix.ticket_url ? `<a href="${safeUrl(data.pix.ticket_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--iwo-accent);font-size:13px;">Abrir pagina de pagamento</a>` : ''}</div>`;
           resultEl.style.display = 'block';
           btn.style.display = 'none';
         } else if (data.boleto) {
           clearCart();
-          resultEl.innerHTML = `<div class="card"><h3 style="margin-bottom:8px;">Boleto gerado</h3><p style="font-size:13px;color:var(--iwo-muted);margin-bottom:12px;">Pedido #${data.orderId}</p>${data.boleto.digitable_line ? `<div class="field"><label>Linha digitavel</label><div class="pix-code" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado!';setTimeout(()=>this.textContent=this.dataset.code,2000)" data-code="${data.boleto.digitable_line}" title="Clique para copiar">${data.boleto.digitable_line}</div></div>` : ''}${data.boleto.ticket_url ? `<a href="${data.boleto.ticket_url}" target="_blank" class="btn-primary" style="display:block;text-align:center;text-decoration:none;margin-top:12px;">Abrir boleto</a>` : ''}</div>`;
+          resultEl.innerHTML = `<div class="card"><h3 style="margin-bottom:8px;">Boleto gerado</h3><p style="font-size:13px;color:var(--iwo-muted);margin-bottom:12px;">Pedido #${escHtml(data.orderId)}</p>${data.boleto.digitable_line ? `<div class="field"><label>Linha digitavel</label><div class="pix-code" onclick="navigator.clipboard.writeText(this.dataset.code);this.textContent='Copiado!';setTimeout(()=>this.textContent=this.dataset.code,2000)" data-code="${escHtml(data.boleto.digitable_line)}" title="Clique para copiar">${escHtml(data.boleto.digitable_line)}</div></div>` : ''}${data.boleto.ticket_url ? `<a href="${safeUrl(data.boleto.ticket_url)}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block;text-align:center;text-decoration:none;margin-top:12px;">Abrir boleto</a>` : ''}</div>`;
           resultEl.style.display = 'block';
           btn.style.display = 'none';
         } else {
-          resultEl.innerHTML = `<div class="msg-success"><h3 style="margin-bottom:8px;">Pedido recebido</h3><p>Pedido #${data.orderId} — Status: ${data.statusDetail || data.status}</p><p style="margin-top:12px;"><a href="/loja.html" style="color:#16a34a;">Continuar comprando</a></p></div>`;
+          resultEl.innerHTML = `<div class="msg-success"><h3 style="margin-bottom:8px;">Pedido recebido</h3><p>Pedido #${escHtml(data.orderId)} — Status: ${escHtml(data.statusDetail || data.status)}</p><p style="margin-top:12px;"><a href="/loja.html" style="color:#16a34a;">Continuar comprando</a></p></div>`;
           resultEl.style.display = 'block';
         }
       } catch (err) {
