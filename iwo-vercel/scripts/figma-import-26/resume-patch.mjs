@@ -14,12 +14,25 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '../..');
 dotenv.config({ path: join(projectRoot, '.env.local') });
 
+function parseVariant() {
+  const match = process.argv.find((a) => a.startsWith('--variant'));
+  if (!match) return 'desktop';
+  const value = match.includes('=')
+    ? match.split('=')[1]
+    : process.argv[process.argv.indexOf(match) + 1];
+  if (value !== 'desktop' && value !== 'mobile') {
+    throw new Error(`Invalid --variant "${value}". Use desktop or mobile.`);
+  }
+  return value;
+}
+const VARIANT = parseVariant();
+
 const PRODUCT_ID = 26;
 const FIGMA_URL =
   'https://www.figma.com/design/V5L6H0bq5bgM362Lclwbdd/Apple-Landing-Page-Prototype--Community-?node-id=103-952&t=xdUK5HQcl5SxWFK5-11';
 const API_BASE = process.env.IWO_API_BASE || 'http://localhost:3000';
 
-const artifactsDir = join(__dirname, 'artifacts');
+const artifactsDir = join(__dirname, 'artifacts', VARIANT);
 const html = readFileSync(join(artifactsDir, '7-html-wrapped.html'), 'utf8');
 const css = readFileSync(join(artifactsDir, '5-css-scoped.css'), 'utf8');
 const assetManifest = JSON.parse(
@@ -48,7 +61,7 @@ const res = await fetch(`${API_BASE}/api/admin/products/${PRODUCT_ID}/landing`, 
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   },
-  body: JSON.stringify({ figmaUrl: FIGMA_URL, html, css, assetManifest }),
+  body: JSON.stringify({ figmaUrl: FIGMA_URL, html, css, assetManifest, variant: VARIANT }),
 });
 const text = await res.text();
 console.log(`← HTTP ${res.status}`);
