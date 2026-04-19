@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/app/lib/prisma';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createLabel, SuperFreteError } from '@/app/lib/superfrete';
 
 /**
  * MercadoPago webhook — v2 signed notifications.
@@ -171,6 +172,73 @@ export async function POST(request: Request) {
       }
       // Re-throw so MP retries
       throw dbErr;
+    }
+
+    // ── SuperFrete: criar etiqueta se o pagamento foi aprovado ─────────────
+    // Execução best-effort. Falhas NÃO propagam — MP já confirmou o pagamento
+    // e o webhook precisa devolver 200 para sair do retry.
+    const internalStatus = mapMpToInternal(status);
+    const shouldCreateLabel =
+      internalStatus === 'paid' &&
+      order.shippingServiceId != null &&
+      order.superfreteOrderId == null;
+
+    if (shouldCreateLabel) {
+      try {
+        // Recarrega o pedido com orderItems para montar a declaração de conteúdo.
+        const fresh = await prisma.order.findUnique({
+          where: { id: order.id },
+          include: { orderItems: true },
+        });
+        if (!fresh) throw new Error('Order not found after update');
+
+        const label = await createLabel({
+          id: fresh.id,
+          shipToName: fresh.shipToName,
+          shipToDocument: fresh.shipToDocument,
+          shipToPostalCode: fresh.shipToPostalCode,
+          shipToAddress: fresh.shipToAddress,
+          shipToNumber: fresh.shipToNumber,
+          shipToComplement: fresh.shipToComplement,
+          shipToDistrict: fresh.shipToDistrict,
+          shipToCity: fresh.shipToCity,
+          shipToState: fresh.shipToState,
+          shippingServiceId: fresh.shippingServiceId,
+          shippingBoxWeight: fresh.shippingBoxWeight,
+          shippingBoxHeight: fresh.shippingBoxHeight,
+          shippingBoxWidth: fresh.shippingBoxWidth,
+          shippingBoxLength: fresh.shippingBoxLength,
+          payerEmail: fresh.payerEmail,
+          orderItems: fresh.orderItems.map((it) => ({
+            productName: it.productName,
+            quantity: it.quantity,
+            unitPrice: it.unitPrice,
+          })),
+        });
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            superfreteOrderId: label.id,
+            superfreteStatus: label.status,
+            superfreteCreatedAt: new Date(),
+            superfreteError: null,
+          },
+        });
+      } catch (sfErr) {
+        const msg =
+          sfErr instanceof SuperFreteError
+            ? `${sfErr.message}: ${JSON.stringify(sfErr.body).slice(0, 500)}`
+            : String((sfErr as Error)?.message ?? sfErr);
+        console.error('[mp-webhook] SuperFrete createLabel failed', msg);
+        await prisma.order
+          .update({
+            where: { id: order.id },
+            data: { superfreteError: msg.slice(0, 1000) },
+          })
+          .catch((e) => console.error('[mp-webhook] failed to persist sfError', e));
+        // não propagar — precisamos responder 200 para a MP.
+      }
     }
 
     return Response.json({ received: true });
