@@ -219,9 +219,18 @@ model Order {
   superfreteCreatedAt     DateTime? @map("superfrete_created_at")
   superfreteError         String?   @map("superfrete_error") @db.Text
 
+  // ── Cupom ────────────────────────────────────────────────────────────
+  couponCode       String?       @map("coupon_code") @db.VarChar(50)
+  couponKind       CouponKind?   @map("coupon_kind")
+  couponDiscount   Decimal?      @map("coupon_discount") @db.Decimal(10, 2)
+  couponId         Int?          @map("coupon_id")
+
+  coupon           Coupon?       @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
   @@index([customerId])
   @@index([superfreteOrderId])
   @@index([superfreteStatus])
+  @@index([couponCode])
   @@map("orders")
 }
 
@@ -339,6 +348,8 @@ model Coupon {
   validUntil    DateTime?  @map("valid_until") @db.Timestamp(6)
   isActive      Boolean    @default(true) @map("is_active")
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+
+  orders           Order[]
 
   @@map("coupons")
 }
