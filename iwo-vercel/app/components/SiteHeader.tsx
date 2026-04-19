@@ -36,7 +36,7 @@ export function SiteHeader() {
             src="/images/iwo_cinza_extended-1-p-500.webp"
             alt="IWO Watch"
             className="iwo-logo-desktop"
-            style={{ height: 28, width: 'auto', display: 'block', maxWidth: 'none' }}
+            style={{ height: 28, width: 'auto', maxWidth: 'none' }}
           />
           <img
             src="/images/Logo-Icone-Cinza.svg"
