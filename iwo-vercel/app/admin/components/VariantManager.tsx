@@ -45,13 +45,20 @@ function emptyVariant(): Variant {
 }
 
 function parseVariant(v: Record<string, unknown>): Variant {
+  // API serializer (`shapeVariant` in /api/admin/products/[id]/variants/*)
+  // returns Prisma's native camelCase (isActive / compareAtPrice / productId).
+  // Read those first; fall back to snake_case for safety / older payloads.
+  const isActiveRaw = v.isActive ?? v.is_active;
+  const compareAtPriceRaw = v.compareAtPrice ?? v.compare_at_price;
+  const productIdRaw = v.productId ?? v.product_id;
   return {
     id: v.id as number | undefined,
-    product_id: v.product_id as number | undefined,
+    product_id: productIdRaw as number | undefined,
     name: (v.name as string) || '',
     sku: (v.sku as string) || '',
     price: v.price != null ? String(v.price) : '',
-    compare_at_price: v.compare_at_price != null ? String(v.compare_at_price) : '',
+    compare_at_price:
+      compareAtPriceRaw != null ? String(compareAtPriceRaw) : '',
     stock: v.stock != null ? String(v.stock) : '0',
     color: (v.color as string) || '',
     size: (v.size as string) || '',
@@ -60,7 +67,7 @@ function parseVariant(v: Record<string, unknown>): Variant {
       : typeof v.images === 'string'
       ? JSON.parse((v.images as string) || '[]')
       : [],
-    is_active: v.is_active === true || v.is_active === 'true',
+    is_active: isActiveRaw === true || isActiveRaw === 'true',
     _isNew: false,
     _expanded: false,
   };
