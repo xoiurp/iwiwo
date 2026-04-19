@@ -190,7 +190,38 @@ model Order {
 
   orderItems OrderItem[]
 
+  // ── Shipping / SuperFrete ────────────────────────────────────────────
+  shippingServiceId       Int?      @map("shipping_service_id")
+  shippingServiceName     String?   @map("shipping_service_name") @db.VarChar(50)
+  shippingCost            Decimal?  @map("shipping_cost") @db.Decimal(10, 2)
+  shippingDeliveryMin     Int?      @map("shipping_delivery_min")
+  shippingDeliveryMax     Int?      @map("shipping_delivery_max")
+
+  shipToName              String?   @map("ship_to_name") @db.VarChar(255)
+  shipToDocument          String?   @map("ship_to_document") @db.VarChar(20)
+  shipToPostalCode        String?   @map("ship_to_postal_code") @db.VarChar(9)
+  shipToAddress           String?   @map("ship_to_address") @db.VarChar(255)
+  shipToNumber            String?   @map("ship_to_number") @db.VarChar(20)
+  shipToComplement        String?   @map("ship_to_complement") @db.VarChar(100)
+  shipToDistrict          String?   @map("ship_to_district") @db.VarChar(100)
+  shipToCity              String?   @map("ship_to_city") @db.VarChar(100)
+  shipToState             String?   @map("ship_to_state") @db.VarChar(2)
+
+  shippingBoxWeight       Decimal?  @map("shipping_box_weight") @db.Decimal(8, 3)
+  shippingBoxHeight       Int?      @map("shipping_box_height")
+  shippingBoxWidth        Int?      @map("shipping_box_width")
+  shippingBoxLength       Int?      @map("shipping_box_length")
+
+  superfreteOrderId       String?   @map("superfrete_order_id") @db.VarChar(50)
+  superfreteStatus        String?   @map("superfrete_status") @db.VarChar(20)
+  superfreteTracking      String?   @map("superfrete_tracking") @db.VarChar(50)
+  superfreteLabelUrl      String?   @map("superfrete_label_url") @db.VarChar(500)
+  superfreteCreatedAt     DateTime? @map("superfrete_created_at")
+  superfreteError         String?   @map("superfrete_error") @db.Text
+
   @@index([customerId])
+  @@index([superfreteOrderId])
+  @@index([superfreteStatus])
   @@map("orders")
 }
 
