@@ -68,30 +68,36 @@ function subscribe(cb: () => void) {
   return () => window.removeEventListener('storage', cb);
 }
 
-function readCart(): CartItem[] {
-  try {
-    const raw = localStorage.getItem(CART_KEY);
-    return raw ? (JSON.parse(raw) as CartItem[]) : [];
-  } catch {
-    return [];
-  }
-}
+// Cache para estabilizar a identidade do snapshot — React 19
+// useSyncExternalStore exige que getSnapshot retorne o MESMO objeto
+// enquanto o estado subjacente não mudou, senão warnings + re-renders.
+let cachedSnapshot: CheckoutState = EMPTY;
+let cachedCartRaw = '\x00';   // sentinela diferente de '' para forçar 1ª leitura
+let cachedStateRaw = '\x00';
 
 function getSnapshot(): CheckoutState {
   if (typeof window === 'undefined') return EMPTY;
+  const cartRaw = localStorage.getItem(CART_KEY) ?? '';
+  const stateRaw = localStorage.getItem(STORAGE_KEY) ?? '';
+  if (cartRaw === cachedCartRaw && stateRaw === cachedStateRaw) {
+    return cachedSnapshot;
+  }
+  cachedCartRaw = cartRaw;
+  cachedStateRaw = stateRaw;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Partial<CheckoutState>) : {};
-    return {
-      cart: readCart(), // cart é fonte separada — iwo_cart
+    const cart = cartRaw ? (JSON.parse(cartRaw) as CheckoutState['cart']) : [];
+    const parsed = stateRaw ? (JSON.parse(stateRaw) as Partial<CheckoutState>) : {};
+    cachedSnapshot = {
+      cart,
       coupon: parsed.coupon ?? null,
       shipTo: parsed.shipTo ?? null,
       selectedAddressId: parsed.selectedAddressId ?? null,
       shipping: parsed.shipping ?? null,
     };
   } catch {
-    return EMPTY;
+    cachedSnapshot = EMPTY;
   }
+  return cachedSnapshot;
 }
 
 function writeState(patch: Partial<Omit<CheckoutState, 'cart'>>) {
