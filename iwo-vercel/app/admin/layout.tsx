@@ -149,6 +149,7 @@ const navItems = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/produtos', label: 'Produtos' },
   { href: '/admin/produtos/novo', label: 'Novo Produto' },
+  { href: '/admin/pedidos', label: 'Pedidos' },
 ];
 
 function LoginForm({ onLogin }: { onLogin: (token: string) => void }) {
