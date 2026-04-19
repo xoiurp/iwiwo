@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCheckoutState } from '@/app/lib/checkoutState';
-import { Stepper } from '@/app/components/checkout/Stepper';
 import { AddressForm, AddressFormValue } from '@/app/components/checkout/AddressForm';
 import { AddressAccordion, SavedAddress } from '@/app/components/checkout/AddressAccordion';
 import { ShippingOptions, ShippingOption } from '@/app/components/checkout/ShippingOptions';
@@ -203,7 +202,6 @@ function EnderecoPageInner() {
 
   return (
     <>
-      <Stepper current={2} />
       <div className="checkout-card">
         <h2>Endereço de entrega</h2>
         {msg === 'quote_stale' ? (
@@ -285,7 +283,7 @@ function EnderecoPageInner() {
 
 export default function EnderecoPage() {
   return (
-    <Suspense fallback={<Stepper current={2} />}>
+    <Suspense fallback={null}>
       <EnderecoPageInner />
     </Suspense>
   );

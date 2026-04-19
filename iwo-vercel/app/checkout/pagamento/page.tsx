@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCheckoutState } from '@/app/lib/checkoutState';
-import { Stepper } from '@/app/components/checkout/Stepper';
 import { PaymentMethodTabs, PayMethod } from '@/app/components/checkout/PaymentMethodTabs';
 import { CardForm } from '@/app/components/checkout/CardForm';
 import { formatBRL } from '@/app/lib/format';
@@ -196,7 +195,6 @@ export default function PagamentoPage() {
 
   return (
     <>
-      <Stepper current={3} />
 
       <div className="checkout-card">
         <h2>Dados do pagador</h2>

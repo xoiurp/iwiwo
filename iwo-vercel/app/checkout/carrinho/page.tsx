@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCheckoutState } from '@/app/lib/checkoutState';
-import { Stepper } from '@/app/components/checkout/Stepper';
 import { CouponField } from '@/app/components/checkout/CouponField';
 import { formatBRL } from '@/app/lib/format';
 import type { CSSProperties } from 'react';
@@ -97,7 +96,6 @@ function CarrinhoPageInner() {
 
   return (
     <>
-      <Stepper current={1} />
       <div className="checkout-card">
         <h2>Revisão do carrinho</h2>
         {msg === 'coupon_invalid' ? (
@@ -176,7 +174,7 @@ function CarrinhoPageInner() {
 
 export default function CarrinhoPage() {
   return (
-    <Suspense fallback={<Stepper current={1} />}>
+    <Suspense fallback={null}>
       <CarrinhoPageInner />
     </Suspense>
   );
