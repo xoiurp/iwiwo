@@ -85,6 +85,20 @@ function normalizeKeys(input: Record<string, unknown>): Record<string, unknown> 
   return out;
 }
 
+// comGps / comNfc are stored as VARCHAR(255) (free-form descriptors like
+// "Dual-band" or "Sim"), but the legacy admin form submits them as boolean
+// checkboxes. Coerce booleans to "Sim"/null so Prisma accepts the update.
+const STRING_FROM_BOOL_FIELDS = ['comGps', 'comNfc'] as const;
+
+function coerceStringOrBoolFields(body: Record<string, unknown>): void {
+  for (const field of STRING_FROM_BOOL_FIELDS) {
+    const v = body[field];
+    if (typeof v === 'boolean') {
+      body[field] = v ? 'Sim' : null;
+    }
+  }
+}
+
 // ── GET: Single product by ID ────────────────────────────────────────────────
 
 export async function GET(
@@ -134,6 +148,7 @@ export async function PUT(
 
     const raw = (await request.json()) as Record<string, unknown>;
     const body = normalizeKeys(raw);
+    coerceStringOrBoolFields(body);
 
     // Fix 5: validate name if present
     if (body.name !== undefined) {

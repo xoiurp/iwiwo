@@ -4,6 +4,11 @@ import Providers from "./providers";
 export const metadata: Metadata = {
   title: "IWO Watch",
   description: "IWO Watch - Smartwatches",
+  icons: {
+    icon: [{ url: "/images/favicon.svg", type: "image/svg+xml" }],
+    shortcut: "/images/favicon.svg",
+    apple: "/images/favicon.svg",
+  },
 };
 
 export default function RootLayout({
