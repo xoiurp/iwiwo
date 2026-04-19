@@ -2,6 +2,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/app/lib/prisma';
 import { quote, SuperFreteError } from '@/app/lib/superfrete';
 import { auth } from '@/app/lib/auth';
+import { validateAndComputeCoupon } from '@/app/lib/coupon';
+import { signOrderToken } from '@/app/lib/orderToken';
 
 interface CartItem {
   productId: number;
@@ -278,8 +280,31 @@ export async function POST(request: Request) {
     }
 
     const shippingCost = Math.round(selected.price * 100) / 100;
+
+    // ── Validar cupom (se enviado) server-side ──────────────────────────────
+    const couponCodeRaw = (body as { couponCode?: unknown }).couponCode;
+    let couponResult: Awaited<ReturnType<typeof validateAndComputeCoupon>> | null = null;
+    if (couponCodeRaw != null && String(couponCodeRaw).trim() !== '') {
+      const subtotalPreview = priced.reduce((s, it) => s + it.totalPrice, 0);
+      couponResult = await validateAndComputeCoupon(
+        String(couponCodeRaw),
+        subtotalPreview,
+      );
+      if (!couponResult.ok) {
+        return Response.json(
+          {
+            error: 'COUPON_INVALID',
+            message: couponResult.message,
+            code: couponResult.error,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     const subtotal = priced.reduce((sum, it) => sum + it.totalPrice, 0);
-    const totalAmount = Math.round((subtotal + shippingCost) * 100) / 100;
+    const couponDiscount = couponResult?.ok ? couponResult.discount : 0;
+    const totalAmount = Math.round((subtotal - couponDiscount + shippingCost) * 100) / 100;
 
     const description = priced
       .map(i => `${i.quantity}x ${i.name}`)
@@ -363,6 +388,10 @@ export async function POST(request: Request) {
           shippingBoxHeight: selected.box.height,
           shippingBoxWidth: selected.box.width,
           shippingBoxLength: selected.box.length,
+          couponCode: couponResult?.ok ? couponResult.coupon.code : null,
+          couponKind: couponResult?.ok ? couponResult.coupon.kind : null,
+          couponDiscount: couponResult?.ok ? couponResult.discount : null,
+          couponId: couponResult?.ok ? couponResult.coupon.id : null,
           orderItems: {
             create: priced.map(p => ({
               productId: p.productId,
@@ -461,6 +490,7 @@ export async function POST(request: Request) {
       // Build response for frontend
       const result: Record<string, unknown> = {
         orderId: order.id,
+        token: signOrderToken(order.id, order.createdAt ?? new Date()),
         mpPaymentId,
         status: mpData.status,
         statusDetail: mpData.status_detail,
