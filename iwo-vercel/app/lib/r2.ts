@@ -11,13 +11,40 @@ const R2 = new S3Client({
   },
 });
 
+export type PresignedUpload = {
+  uploadUrl: string;
+  publicUrl: string;
+  key: string;
+};
+
+// Overload A: legacy `products/<id>/<uuid>.<ext>` — used by /api/admin/upload.
+// Overload B: `{ key, contentType }` — caller chooses the key (used for landing assets).
 export async function createPresignedUpload(
   productId: number | string,
   fileName: string,
   contentType: string
-) {
-  const ext = fileName.split('.').pop() || 'jpg';
-  const key = `products/${productId}/${randomUUID()}.${ext}`;
+): Promise<PresignedUpload>;
+export async function createPresignedUpload(
+  input: { key: string; contentType: string }
+): Promise<PresignedUpload>;
+export async function createPresignedUpload(
+  a: number | string | { key: string; contentType: string },
+  b?: string,
+  c?: string
+): Promise<PresignedUpload> {
+  let key: string;
+  let contentType: string;
+
+  if (typeof a === 'object' && a !== null) {
+    key = a.key;
+    contentType = a.contentType;
+  } else {
+    const productId = a;
+    const fileName = b ?? 'upload.jpg';
+    contentType = c ?? 'application/octet-stream';
+    const ext = fileName.split('.').pop() || 'jpg';
+    key = `products/${productId}/${randomUUID()}.${ext}`;
+  }
 
   const command = new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME!,

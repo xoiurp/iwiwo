@@ -157,8 +157,17 @@ export async function PUT(
       }
     }
 
-    // Fix 5: price must be finite non-negative number if present
+    // Normalize Decimal fields: "" | null → null; else validate finite >= 0.
+    // Prisma rejects "" for Decimal columns, so empty strings must become null.
+    const isEmptyDecimal = (v: unknown) => v === '' || v === null;
+
     if (body.price !== undefined) {
+      if (isEmptyDecimal(body.price)) {
+        return Response.json(
+          { error: 'Campo "price" é obrigatório' },
+          { status: 400 }
+        );
+      }
       const priceNum = Number(body.price);
       if (!Number.isFinite(priceNum) || priceNum < 0) {
         return Response.json(
@@ -170,9 +179,21 @@ export async function PUT(
       body.priceFormatted = formatBRL(priceNum);
     }
 
-    // Auto-generate compareAtPriceFormatted when compareAtPrice is updated
-    if (body.compareAtPrice !== undefined && body.compareAtPrice != null && Number.isFinite(Number(body.compareAtPrice))) {
-      body.compareAtPriceFormatted = formatBRL(Number(body.compareAtPrice));
+    if (body.compareAtPrice !== undefined) {
+      if (isEmptyDecimal(body.compareAtPrice)) {
+        body.compareAtPrice = null;
+        body.compareAtPriceFormatted = null;
+      } else {
+        const cmpNum = Number(body.compareAtPrice);
+        if (!Number.isFinite(cmpNum) || cmpNum < 0) {
+          return Response.json(
+            { error: 'Campo "compareAtPrice" deve ser número finito >= 0' },
+            { status: 400 }
+          );
+        }
+        body.compareAtPrice = cmpNum;
+        body.compareAtPriceFormatted = formatBRL(cmpNum);
+      }
     }
 
     // Auto-set image from images array (principal image). JsonB → pass through.

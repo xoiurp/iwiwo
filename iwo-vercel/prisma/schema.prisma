@@ -127,6 +127,13 @@ model Product {
   url                     String?
   images                  Json?     @default("[]")
 
+  // ── Landing (Figma-imported product landing page) ──────────────────────
+  landingFigmaUrl      String?   @map("landing_figma_url") @db.VarChar(500)
+  landingHtml          String?   @map("landing_html") @db.Text
+  landingCss           String?   @map("landing_css") @db.Text
+  landingAssetManifest Json?     @map("landing_asset_manifest") @db.JsonB
+  landingImportedAt    DateTime? @map("landing_imported_at")
+
   // Relations
   variants   ProductVariant[]
   orderItems OrderItem[]

@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminFetch } from '../../lib/auth';
 import ProductForm, { type Product, type ProductData } from '../../components/ProductForm';
+import LandingManager from '../../components/LandingManager';
 
 const styles = {
   header: {
@@ -153,6 +154,15 @@ export default function EditarProdutoPage({
         onSubmit={handleSubmit}
         isEdit
       />
+
+      {product?.id && product?.slug && (
+        <div style={{ maxWidth: 800, marginTop: 24 }}>
+          <LandingManager
+            productId={Number(product.id)}
+            productSlug={String(product.slug)}
+          />
+        </div>
+      )}
     </div>
   );
 }
