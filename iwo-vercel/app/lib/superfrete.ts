@@ -188,3 +188,172 @@ export async function quote(input: {
       };
     });
 }
+
+// ── Criar etiqueta ────────────────────────────────────────────────────────
+// POST /api/v0/cart — cria etiqueta com status "pending" (aguardando pagamento).
+
+export type CreateLabelOrder = {
+  id: number;
+  // destinatário
+  shipToName: string | null;
+  shipToDocument: string | null;
+  shipToPostalCode: string | null;
+  shipToAddress: string | null;
+  shipToNumber: string | null;
+  shipToComplement: string | null;
+  shipToDistrict: string | null;
+  shipToCity: string | null;
+  shipToState: string | null;
+  // serviço
+  shippingServiceId: number | null;
+  // caixa
+  shippingBoxWeight: { toNumber(): number } | number | null;
+  shippingBoxHeight: number | null;
+  shippingBoxWidth: number | null;
+  shippingBoxLength: number | null;
+  // email (opcional — para tracking por email)
+  payerEmail: string | null;
+  // items (declaração de conteúdo)
+  orderItems: Array<{
+    productName: string;
+    quantity: number;
+    unitPrice: { toNumber(): number } | number;
+  }>;
+};
+
+function decimalOrNumberToNumber(v: { toNumber(): number } | number | null): number {
+  if (v == null) return 0;
+  if (typeof v === 'number') return v;
+  return v.toNumber();
+}
+
+export async function createLabel(order: CreateLabelOrder): Promise<{
+  id: string;
+  price: number;
+  status: string;
+}> {
+  if (!order.shippingServiceId || !order.shipToPostalCode) {
+    throw new SuperFreteError('Order sem dados de frete', 400, null);
+  }
+
+  const fromName = process.env.SHIPPING_FROM_NAME ?? '';
+  const fromDocument = process.env.SHIPPING_FROM_DOCUMENT ?? '';
+  const fromCep = (process.env.SHIPPING_FROM_POSTAL_CODE ?? '').replace(/\D/g, '');
+  const fromAddress = process.env.SHIPPING_FROM_ADDRESS ?? '';
+  const fromNumber = process.env.SHIPPING_FROM_NUMBER ?? '';
+  const fromComplement = process.env.SHIPPING_FROM_COMPLEMENT ?? '';
+  const fromDistrict = process.env.SHIPPING_FROM_DISTRICT ?? 'NA';
+  const fromCity = process.env.SHIPPING_FROM_CITY ?? '';
+  const fromState = (process.env.SHIPPING_FROM_STATE ?? '').toUpperCase();
+
+  const payload = {
+    from: {
+      name: fromName,
+      address: fromAddress,
+      complement: fromComplement || undefined,
+      number: fromNumber || '',
+      district: fromDistrict,
+      city: fromCity,
+      state_abbr: fromState,
+      postal_code: fromCep,
+      document: fromDocument || undefined,
+    },
+    to: {
+      name: order.shipToName ?? '',
+      address: order.shipToAddress ?? '',
+      complement: order.shipToComplement || undefined,
+      number: order.shipToNumber ?? '',
+      district: order.shipToDistrict || 'NA',
+      city: order.shipToCity ?? '',
+      state_abbr: (order.shipToState ?? '').toUpperCase(),
+      postal_code: String(order.shipToPostalCode).replace(/\D/g, ''),
+      email: order.payerEmail || undefined,
+      document: order.shipToDocument ?? '',
+    },
+    service: order.shippingServiceId,
+    products: order.orderItems.map((it) => ({
+      name: it.productName,
+      quantity: String(it.quantity),
+      unitary_value: String(decimalOrNumberToNumber(it.unitPrice)),
+    })),
+    volumes: {
+      weight: decimalOrNumberToNumber(order.shippingBoxWeight),
+      height: order.shippingBoxHeight ?? 0,
+      width: order.shippingBoxWidth ?? 0,
+      length: order.shippingBoxLength ?? 0,
+    },
+    options: {
+      non_commercial: true,
+      tags: [{ tag: `iwo-order-${order.id}` }],
+    },
+    platform: 'IWO Watch',
+  };
+
+  const raw = (await sfFetch('/api/v0/cart', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })) as { id?: string; price?: number; status?: string };
+
+  if (!raw.id) {
+    throw new SuperFreteError('SuperFrete não retornou id da etiqueta', 502, raw);
+  }
+  return {
+    id: raw.id,
+    price: Number(raw.price ?? 0),
+    status: String(raw.status ?? 'pending'),
+  };
+}
+
+// ── Consulta etiqueta ─────────────────────────────────────────────────────
+export type LabelInfo = {
+  id: string;
+  status: string;
+  tracking: string | null;
+  price: number;
+  service_id: number | null;
+  delivery_min: number | null;
+  delivery_max: number | null;
+};
+
+export async function getLabelInfo(superfreteOrderId: string): Promise<LabelInfo> {
+  const raw = (await sfFetch(`/api/v0/order/info/${encodeURIComponent(superfreteOrderId)}`, {
+    method: 'GET',
+  })) as Record<string, unknown>;
+  return {
+    id: String(raw.id ?? superfreteOrderId),
+    status: String(raw.status ?? 'unknown'),
+    tracking: raw.tracking ? String(raw.tracking) : null,
+    price: Number(raw.price ?? 0),
+    service_id: raw.service_id != null ? Number(raw.service_id) : null,
+    delivery_min: raw.delivery_min != null ? Number(raw.delivery_min) : null,
+    delivery_max: raw.delivery_max != null ? Number(raw.delivery_max) : null,
+  };
+}
+
+// ── URL do PDF da etiqueta ────────────────────────────────────────────────
+export async function getPrintUrl(superfreteOrderId: string): Promise<string> {
+  const raw = (await sfFetch('/api/v0/tag/print', {
+    method: 'POST',
+    body: JSON.stringify({ orders: [superfreteOrderId] }),
+  })) as { url?: string };
+  if (!raw.url) {
+    throw new SuperFreteError('SuperFrete não retornou URL de impressão', 502, raw);
+  }
+  return raw.url;
+}
+
+// ── Cancelar etiqueta ─────────────────────────────────────────────────────
+export async function cancelLabel(
+  superfreteOrderId: string,
+  reason: string,
+): Promise<void> {
+  await sfFetch('/api/v0/order/cancel', {
+    method: 'POST',
+    body: JSON.stringify({
+      order: {
+        id: superfreteOrderId,
+        description: reason.slice(0, 255) || 'Cancelado pela loja',
+      },
+    }),
+  });
+}
