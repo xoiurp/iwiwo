@@ -58,8 +58,14 @@
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  /* Em mobile, mostra resumo ANTES do form (ordem invertida do desktop). */
-  .checkout-grid > aside { order: -1; }
+  /* Em mobile, mostra resumo ANTES do form (ordem invertida do desktop).
+     Também desliga o sticky para não sobrepor o card de dados do pagador
+     quando o usuário scrolla — posição natural no fluxo acima do form. */
+  .checkout-grid > aside {
+    order: -1;
+    position: static !important;
+    top: auto !important;
+  }
 }
 
 .checkout-card {
