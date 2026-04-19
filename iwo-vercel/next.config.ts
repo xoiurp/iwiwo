@@ -11,7 +11,6 @@ const STATIC_PAGE_MAP: Array<[string, string]> = [
   // Principais
   ["/loja", "/loja.html"],
   ["/carrinho", "/cart.html"],
-  ["/checkout", "/checkout.html"],
   ["/contato", "/contato.html"],
   ["/biografia-instagram", "/biografia-instagram.html"],
 
