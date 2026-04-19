@@ -34,17 +34,32 @@
 
 .checkout-layout * { box-sizing: border-box; }
 
+/* Flex column: header + main cresce + footer colado no bottom.
+   Evita espaço em branco abaixo do footer quando o conteúdo é curto. */
+.checkout-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.checkout-layout > main { flex: 1 1 auto; }
+
 .checkout-grid {
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 32px 20px;
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: 1fr 380px;
   gap: 32px;
   align-items: start;
+  width: 100%;
 }
 @media (max-width: 900px) {
-  .checkout-grid { grid-template-columns: 1fr; gap: 16px; }
+  .checkout-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  /* Em mobile, mostra resumo ANTES do form (ordem invertida do desktop). */
+  .checkout-grid > aside { order: -1; }
 }
 
 .checkout-card {

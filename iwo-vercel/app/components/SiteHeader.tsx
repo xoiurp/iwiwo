@@ -34,8 +34,7 @@ export function SiteHeader() {
           <img
             src="/images/iwo_cinza_extended-1-p-500.webp"
             alt="IWO Watch"
-            className="navbar21_logo"
-            style={{ height: 40 }}
+            style={{ height: 28, width: 'auto', display: 'block', maxWidth: 'none' }}
           />
         </Link>
         <div className="menu-wrapper-copy">

@@ -12,8 +12,8 @@ export default function CheckoutLayout({
     <div className="checkout-layout">
       <SiteHeader />
       <main className="checkout-grid">
-        <CheckoutSummary />
         <div>{children}</div>
+        <CheckoutSummary />
       </main>
       <SiteFooter />
     </div>
