@@ -71,10 +71,20 @@ export const REQUIRED_PRODUCT_FIELDS = {
   cor2: true,
   cor3: true,
 
-  // landing state (needed by the page component itself)
+  // landing desktop
+  landingFigmaUrl: true,
   landingHtml: true,
   landingCss: true,
+  landingAssetManifest: true,
   landingImportedAt: true,
+
+  // landing mobile
+  landingMobileFigmaUrl: true,
+  landingMobileHtml: true,
+  landingMobileCss: true,
+  landingMobileAssetManifest: true,
+  landingMobileImportedAt: true,
+
   image: true,
 } as const satisfies Prisma.ProductSelect;
 
@@ -177,8 +187,10 @@ if (process.env.NODE_ENV !== 'production') {
     gravadorDeVoz: null, controleDeMusica: null, ecg: null, pressaoArterial: null,
     frequenciaCardiaca: null, oxigenioNoSangue: null, saudeFeminina: null,
     monitoramentoDeSono: null, pedometro: null, cor1: null, cor2: null,
-    cor3: null, landingHtml: null, landingCss: null, landingImportedAt: null,
-    image: null,
+    cor3: null, landingFigmaUrl: null, landingHtml: null, landingCss: null,
+    landingAssetManifest: null, landingImportedAt: null, landingMobileFigmaUrl: null,
+    landingMobileHtml: null, landingMobileCss: null, landingMobileAssetManifest: null,
+    landingMobileImportedAt: null, image: null,
   } as ProductForLanding);
 
   const mapValues = new Set<string>(Object.values(PLACEHOLDER_MAP));
