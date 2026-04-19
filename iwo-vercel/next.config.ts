@@ -57,16 +57,33 @@ const LEGACY_ACCOUNT_REDIRECTS: Array<[string, string]> = [
   ["/account/order.html", "/conta/pedidos"],
 ];
 
+// O checkout antigo (public/checkout.html) foi substituído pelo fluxo
+// multi-step em app/checkout/carrinho|endereco|pagamento|confirmacao.
+// cart.js ainda aponta para /checkout.html — redirecionamos em vez de
+// editar o JS estático. Arquivo .html continua no repo como fallback de
+// rollback, acessível só quando explicitamente referenciado fora do browser.
+const CHECKOUT_REDIRECTS: Array<[string, string]> = [
+  ["/checkout", "/checkout/carrinho"],
+  ["/checkout.html", "/checkout/carrinho"],
+];
+
 const nextConfig: NextConfig = {
   async rewrites() {
     return STATIC_PAGE_MAP.map(([source, destination]) => ({ source, destination }));
   },
   async redirects() {
-    return LEGACY_ACCOUNT_REDIRECTS.map(([source, destination]) => ({
-      source,
-      destination,
-      permanent: true,
-    }));
+    return [
+      ...LEGACY_ACCOUNT_REDIRECTS.map(([source, destination]) => ({
+        source,
+        destination,
+        permanent: true,
+      })),
+      ...CHECKOUT_REDIRECTS.map(([source, destination]) => ({
+        source,
+        destination,
+        permanent: false, // pode voltar pro estático se precisarmos de rollback
+      })),
+    ];
   },
 };
 

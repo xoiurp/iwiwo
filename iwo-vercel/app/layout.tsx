@@ -22,7 +22,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="/css/webflow.css" />
         <link rel="stylesheet" href="/css/iwo-watch.webflow.css" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>
