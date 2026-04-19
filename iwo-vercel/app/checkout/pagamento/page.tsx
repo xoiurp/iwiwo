@@ -36,12 +36,21 @@ export default function PagamentoPage() {
   // during render. Comparing prev state during render and calling setters
   // is the idiomatic React pattern for "reset state when props change".
   const [seededShipName, setSeededShipName] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Espera primeiro tick de hidratação antes dos guards — useSyncExternalStore
+  // retorna EMPTY do server snapshot no 1º render; sem esse flag os guards
+  // redirecionariam antes do localStorage ser lido.
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!state.shipTo || !state.shipping || state.cart.length === 0) {
       router.replace('/checkout/endereco');
     }
-  }, [state, router]);
+  }, [hydrated, state, router]);
 
   const shipName = state.shipTo?.name ?? null;
   if (shipName && seededShipName !== shipName) {
@@ -182,6 +191,7 @@ export default function PagamentoPage() {
     }
   }
 
+  if (!hydrated) return <div className="checkout-card">Carregando...</div>;
   if (!state.shipTo || !state.shipping) return null;
 
   return (

@@ -46,14 +46,21 @@ function EnderecoPageInner() {
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const msg = params.get('msg');
+
+  // Espera primeiro tick de hidratação antes de ativar os guards —
+  // useSyncExternalStore usa EMPTY do server snapshot inicialmente.
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   // Guard: sem cart → step 1
   useEffect(() => {
-    if (state.cart.length === 0) {
+    if (hydrated && state.cart.length === 0) {
       router.replace('/checkout/carrinho');
     }
-  }, [state.cart.length, router]);
+  }, [hydrated, state.cart.length, router]);
 
   // Carregar endereços do usuário logado
   useEffect(() => {

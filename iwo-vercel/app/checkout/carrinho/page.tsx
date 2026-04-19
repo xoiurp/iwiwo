@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCheckoutState } from '@/app/lib/checkoutState';
 import { Stepper } from '@/app/components/checkout/Stepper';
@@ -66,12 +66,21 @@ function CarrinhoPageInner() {
   const params = useSearchParams();
   const { state, setCart } = useCheckoutState();
   const msg = params.get('msg');
+  const [hydrated, setHydrated] = useState(false);
+
+  // Espera um tick após o mount antes de checar o guard —
+  // useSyncExternalStore retorna EMPTY do server snapshot no 1º render,
+  // mesmo com itens no localStorage. Sem esse flag, o guard redireciona
+  // para /loja antes do store hidratar.
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
-    if (state.cart.length === 0) {
+    if (hydrated && state.cart.length === 0) {
       router.replace('/loja.html');
     }
-  }, [state.cart.length, router]);
+  }, [hydrated, state.cart.length, router]);
 
   function changeQty(idx: number, delta: number) {
     const next = state.cart.map((it, i) =>
