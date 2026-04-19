@@ -487,10 +487,18 @@ export async function POST(request: Request) {
         // Non-fatal — payment already created at MP; surface in response but do not throw
       }
 
+      if (!order.createdAt) {
+        // Invariant: Prisma @default(now()) guarantees createdAt is populated.
+        // If this ever throws, schema or driver is misbehaving. Fail LOUD here at
+        // checkout instead of silently at the confirmation page.
+        throw new Error('Order.createdAt ausente pós-create');
+      }
+      const orderToken = signOrderToken(order.id, order.createdAt);
+
       // Build response for frontend
       const result: Record<string, unknown> = {
         orderId: order.id,
-        token: signOrderToken(order.id, order.createdAt ?? new Date()),
+        token: orderToken,
         mpPaymentId,
         status: mpData.status,
         statusDetail: mpData.status_detail,
