@@ -1,5 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/app/lib/prisma';
+import { quote, SuperFreteError } from '@/app/lib/superfrete';
+import { auth } from '@/app/lib/auth';
 
 interface CartItem {
   productId: number;
@@ -23,6 +25,24 @@ interface PricedItem {
   slug?: string;
 }
 
+interface ShipTo {
+  name: string;
+  document: string;
+  postalCode: string;
+  address: string;
+  number: string;
+  complement?: string;
+  district: string;
+  city: string;
+  state: string;
+}
+
+interface ShippingRequest {
+  serviceId: number;
+  toPostalCode: string;
+  quotedPrice: number;
+}
+
 function toInt(n: unknown): number | null {
   const x = Number(n);
   return Number.isFinite(x) && Number.isInteger(x) ? x : null;
@@ -38,6 +58,40 @@ function decimalToNumber(v: Prisma.Decimal | number | null | undefined): number 
   } catch {
     return Number(v as unknown as string);
   }
+}
+
+function sanitizeCep(v: unknown): string {
+  return String(v ?? '').replace(/\D/g, '');
+}
+
+function sanitizeDigits(v: unknown, max: number): string {
+  return String(v ?? '').replace(/\D/g, '').slice(0, max);
+}
+
+function validateShipTo(s: unknown): { ok: true; data: ShipTo } | { ok: false; error: string } {
+  if (!s || typeof s !== 'object') return { ok: false, error: 'shipTo ausente' };
+  const src = s as Record<string, unknown>;
+  const name = String(src.name ?? '').trim().slice(0, 255);
+  const document = sanitizeDigits(src.document, 14);
+  const postalCode = sanitizeCep(src.postalCode);
+  const address = String(src.address ?? '').trim().slice(0, 255);
+  const number = String(src.number ?? '').trim().slice(0, 20);
+  const complement = String(src.complement ?? '').trim().slice(0, 100);
+  const district = String(src.district ?? '').trim().slice(0, 100) || 'NA';
+  const city = String(src.city ?? '').trim().slice(0, 100);
+  const state = String(src.state ?? '').trim().toUpperCase().slice(0, 2);
+
+  if (!name || name.split(/\s+/).length < 2) {
+    return { ok: false, error: 'Nome completo do destinatário obrigatório' };
+  }
+  if (document.length !== 11) return { ok: false, error: 'CPF inválido' };
+  if (postalCode.length !== 8) return { ok: false, error: 'CEP inválido' };
+  if (!address) return { ok: false, error: 'Endereço obrigatório' };
+  if (!number) return { ok: false, error: 'Número obrigatório' };
+  if (!city) return { ok: false, error: 'Cidade obrigatória' };
+  if (!/^[A-Z]{2}$/.test(state)) return { ok: false, error: 'UF inválida' };
+
+  return { ok: true, data: { name, document, postalCode, address, number, complement, district, city, state } };
 }
 
 export async function POST(request: Request) {
@@ -160,9 +214,72 @@ export async function POST(request: Request) {
       });
     }
 
-    // Ignore client total/subtotal entirely
+    // ── Validar shipTo e shipping ───────────────────────────────────────────
+    const shipToRaw = (body as { shipTo?: unknown }).shipTo;
+    const shipToValidation = validateShipTo(shipToRaw);
+    if (!shipToValidation.ok) {
+      return Response.json({ error: shipToValidation.error }, { status: 400 });
+    }
+    const shipTo = shipToValidation.data;
+
+    const shippingRaw = (body as { shipping?: unknown }).shipping as ShippingRequest | undefined;
+    if (
+      !shippingRaw ||
+      typeof shippingRaw !== 'object' ||
+      typeof shippingRaw.serviceId !== 'number' ||
+      ![1, 2, 17].includes(shippingRaw.serviceId) ||
+      typeof shippingRaw.quotedPrice !== 'number' ||
+      !Number.isFinite(shippingRaw.quotedPrice)
+    ) {
+      return Response.json({ error: 'Frete não selecionado' }, { status: 400 });
+    }
+
+    // Re-cota server-side (anti-tampering)
+    const totalQuantity = priced.reduce((s, it) => s + it.quantity, 0);
+    let shippingOptions;
+    try {
+      shippingOptions = await quote({
+        toPostalCode: shipTo.postalCode,
+        totalQuantity,
+      });
+    } catch (err) {
+      if (err instanceof SuperFreteError) {
+        console.error('[checkout] SuperFrete quote error', err.status, err.body);
+        return Response.json(
+          { error: 'Falha ao validar frete. Tente novamente.' },
+          { status: 502 },
+        );
+      }
+      throw err;
+    }
+
+    const selected = shippingOptions.find((o) => o.serviceId === shippingRaw.serviceId);
+    if (!selected) {
+      return Response.json(
+        {
+          error: 'SHIPPING_OPTION_UNAVAILABLE',
+          message: 'O serviço escolhido não está mais disponível.',
+          newOptions: shippingOptions,
+        },
+        { status: 409 },
+      );
+    }
+
+    const tolerance = Math.max(0.5, shippingRaw.quotedPrice * 0.05);
+    if (Math.abs(selected.price - shippingRaw.quotedPrice) > tolerance) {
+      return Response.json(
+        {
+          error: 'SHIPPING_QUOTE_STALE',
+          message: 'O valor do frete mudou.',
+          newOptions: shippingOptions,
+        },
+        { status: 409 },
+      );
+    }
+
+    const shippingCost = Math.round(selected.price * 100) / 100;
     const subtotal = priced.reduce((sum, it) => sum + it.totalPrice, 0);
-    const totalAmount = Math.round(subtotal * 100) / 100;
+    const totalAmount = Math.round((subtotal + shippingCost) * 100) / 100;
 
     const description = priced
       .map(i => `${i.quantity}x ${i.name}`)
@@ -228,6 +345,24 @@ export async function POST(request: Request) {
           payerEmail: payer.email as string,
           payerName,
           payerCpf,
+          shippingServiceId: selected.serviceId,
+          shippingServiceName: selected.name,
+          shippingCost,
+          shippingDeliveryMin: selected.deliveryMin,
+          shippingDeliveryMax: selected.deliveryMax,
+          shipToName: shipTo.name,
+          shipToDocument: shipTo.document,
+          shipToPostalCode: shipTo.postalCode,
+          shipToAddress: shipTo.address,
+          shipToNumber: shipTo.number,
+          shipToComplement: shipTo.complement || null,
+          shipToDistrict: shipTo.district,
+          shipToCity: shipTo.city,
+          shipToState: shipTo.state,
+          shippingBoxWeight: selected.box.weight,
+          shippingBoxHeight: selected.box.height,
+          shippingBoxWidth: selected.box.width,
+          shippingBoxLength: selected.box.length,
           orderItems: {
             create: priced.map(p => ({
               productId: p.productId,
@@ -242,6 +377,47 @@ export async function POST(request: Request) {
           },
         },
       });
+
+      // Se cliente logado, salva/atualiza endereço em Customer.Address
+      try {
+        const session = await auth();
+        const userId = (session?.user as { id?: string } | undefined)?.id;
+        if (userId) {
+          const customer = await prisma.customer.findUnique({ where: { userId } });
+          if (customer) {
+            const existing = await prisma.address.findFirst({
+              where: {
+                customerId: customer.id,
+                cep: shipTo.postalCode,
+                number: shipTo.number,
+              },
+            });
+            const addressData = {
+              recipient: shipTo.name,
+              cep: shipTo.postalCode,
+              street: shipTo.address,
+              number: shipTo.number,
+              complement: shipTo.complement || null,
+              neighborhood: shipTo.district,
+              city: shipTo.city,
+              state: shipTo.state,
+            };
+            if (existing) {
+              await prisma.address.update({ where: { id: existing.id }, data: addressData });
+            } else {
+              await prisma.address.create({
+                data: { ...addressData, customerId: customer.id },
+              });
+            }
+            await prisma.order.update({
+              where: { id: order.id },
+              data: { customerId: customer.id },
+            });
+          }
+        }
+      } catch (addrErr) {
+        console.warn('[checkout] address upsert failed (non-fatal)', addrErr);
+      }
 
       mpPayload.external_reference = `order_${order.id}`;
 
